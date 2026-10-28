@@ -53,7 +53,7 @@ export function render(_params, { estado }) {
 
     <section class="secao">
       <h2>Dados</h2>
-      <p class="texto-apoio secao-ajuda">Ciclos, histórico e cargas ficam guardados neste celular.</p>
+      <p class="texto-apoio secao-ajuda">Ciclos, histórico, cargas e hábitos ficam guardados neste celular.</p>
       <button class="botao botao--perigo" type="button" data-acao="apagar-tudo">Apagar todos os dados</button>
     </section>`;
 }
@@ -91,7 +91,7 @@ export const acoes = {
   async 'apagar-tudo'(_dados, ctx) {
     const ok = await confirmar({
       titulo: 'Apagar todos os dados?',
-      texto: 'Ciclos, histórico, cargas e configurações deste celular serão apagados. Não dá para desfazer.',
+      texto: 'Ciclos, histórico, cargas, hábitos e configurações deste celular serão apagados. Não dá para desfazer.',
       botao: 'Apagar tudo',
       perigo: true,
     });

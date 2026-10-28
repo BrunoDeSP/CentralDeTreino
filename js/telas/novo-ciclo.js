@@ -3,17 +3,21 @@ import { anilha } from '../ui/componentes.js';
 import { avisar } from '../ui/avisos.js';
 import { CONFIG } from '../config.js';
 import { cicloAtivo, criarCiclo } from '../treino/regras-do-ciclo.js';
+import { iniciarSessao } from '../treino/sessao.js';
 import { resumoDoModelo } from '../treino/gerador.js';
 import { dataCurta } from '../util/datas.js';
 
 // Ela escolhe quantos dias por semana quer treinar e por quantas semanas.
-// O gerador escolhe a divisão e monta os treinos.
+// O gerador escolhe a divisão e monta os treinos. Vindo do botão "Criar
+// ciclo" do Início (rota #/novo-ciclo/treinar), o primeiro treino já começa.
 
 export const titulo = 'Novo ciclo';
 
 let rascunho = null; // escolhas feitas na tela, antes de montar
+let comecarDepois = false;
 
-export function render(_params, { estado }) {
+export function render([destino], { estado }) {
+  comecarDepois = destino === 'treinar';
   const ativo = cicloAtivo(estado);
   rascunho ??= {
     dias: ativo?.diasPorSemana ?? CONFIG.diasPorSemana.padrao,
@@ -49,7 +53,7 @@ export function render(_params, { estado }) {
         ? html`<p class="nota nota--atencao">Montar um novo ciclo encerra o atual, que começou em ${dataCurta(ativo.inicio)}.</p>`
         : ''}
 
-      <button class="botao" type="submit">Montar ciclo</button>
+      <button class="botao" type="submit">${comecarDepois ? 'Montar ciclo e começar' : 'Montar ciclo'}</button>
     </form>`;
 }
 
@@ -86,8 +90,15 @@ export function aoMudar(evento) {
 export async function aoEnviar(dados, ctx) {
   const diasPorSemana = Number(dados.get('dias'));
   const semanas = Number(dados.get('semanas'));
-  await ctx.alterar((estado) => criarCiclo(estado, { diasPorSemana, semanas }));
+  const ciclo = await ctx.alterar((estado) => criarCiclo(estado, { diasPorSemana, semanas }));
   rascunho = null;
+
+  if (comecarDepois) {
+    await ctx.alterar((estado) => iniciarSessao(estado, ciclo.treinos[0].id));
+    ctx.ir('#/sessao');
+    avisar('Ciclo montado. Bom treino!');
+    return;
+  }
   ctx.ir('#/hoje');
   avisar('Ciclo montado');
 }

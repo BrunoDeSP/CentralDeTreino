@@ -6,9 +6,12 @@ import * as treino from './telas/treino.js';
 import * as novoCiclo from './telas/novo-ciclo.js';
 import * as sessao from './telas/sessao.js';
 import * as configuracoes from './telas/configuracoes.js';
+import * as habitos from './telas/habitos.js';
+import * as habito from './telas/habito.js';
 
 // Rotas por "#" (ex.: #/treino/B) funcionam no GitHub Pages sem configuração extra.
-const ROTAS = { hoje, ciclo, treino, 'novo-ciclo': novoCiclo, sessao, configuracoes };
+// A tela inicial continua na rota #/hoje para não quebrar o app já instalado no celular.
+const ROTAS = { hoje, ciclo, treino, 'novo-ciclo': novoCiclo, sessao, configuracoes, habitos, habito };
 
 // Aba marcada em cada tela. O treino em andamento esconde as abas.
 const ABA_DA_ROTA = {
@@ -18,6 +21,8 @@ const ABA_DA_ROTA = {
   'novo-ciclo': 'ciclo',
   sessao: null,
   configuracoes: 'configuracoes',
+  habitos: 'habitos',
+  habito: 'habitos',
 };
 
 const conteudo = document.getElementById('conteudo');

@@ -1,17 +1,18 @@
 import { armazenamento } from './armazenamento/index.js';
 import { CONFIGURACOES_PADRAO } from './config.js';
 
-// Estado completo do app. Formato salvo (versão 2):
+// Estado completo do app. Formato salvo (versão 3):
 // {
-//   versao: 2,
+//   versao: 3,
 //   cicloAtivoId: 'ciclo_...' | null,
 //   ciclos: [ { id, status, inicio, fim, diasPorSemana, semanas, local, treinos, proximo, sessoes } ],
 //   progressao: { [exercicioId]: { carga, decisao, semEvoluir, ultima, recorde } },
+//   habitos: [ { id, nome, cor, meta: { vezes, periodo }, dias, criadoEm } ],
 //   configuracoes: { pausaSegundos, pausaAutomatica, alertaFimDaPausa, telaLigada },
 //   sessaoEmAndamento: null | { cicloId, treinoId, data, iniciadaEm, circuito, itens, pausa }
 // }
 
-const VERSAO = 2;
+const VERSAO = 3;
 let estado = null;
 
 export function estadoVazio() {
@@ -20,6 +21,7 @@ export function estadoVazio() {
     cicloAtivoId: null,
     ciclos: [],
     progressao: {},
+    habitos: [],
     configuracoes: { ...CONFIGURACOES_PADRAO },
     sessaoEmAndamento: null,
   };
@@ -55,9 +57,12 @@ function migrar(salvo) {
 
   // Versão 1 → 2: entram progressão de carga, configurações e treino em andamento.
   if (migrado.versao === 1) migrado.versao = 2;
+  // Versão 2 → 3: entram os hábitos.
+  if (migrado.versao === 2) migrado.versao = 3;
   if (migrado.versao !== VERSAO) return null;
 
   migrado.progressao ??= {};
+  migrado.habitos ??= [];
   migrado.configuracoes = { ...CONFIGURACOES_PADRAO, ...migrado.configuracoes };
   migrado.sessaoEmAndamento ??= null;
   return migrado;

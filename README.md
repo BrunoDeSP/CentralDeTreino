@@ -1,12 +1,20 @@
 # Central de Treino
 
-Site para acompanhar os treinos pelo celular. Ela escolhe quantos dias por
-semana quer treinar, o app monta a divisão e organiza a semana. Durante o
-treino, o app mostra uma série por vez com a carga sugerida, registra o que
-ela fez e cuida da pausa.
+Site para acompanhar treinos e hábitos pelo celular. Ela escolhe quantos
+dias por semana quer treinar, o app monta a divisão e organiza a semana.
+Durante o treino, o app mostra uma série por vez com a carga sugerida,
+registra o que ela fez e cuida da pausa. No Início ficam o botão do treino e
+o rastreador de hábitos.
 
 ## O que o app faz
 
+- **Início:** a data, o botão "Começar treino" (ou "Criar ciclo", que monta
+  o ciclo e já abre o primeiro treino) com a barra da semana, e o rastreador
+  de hábitos.
+- **Rastreador de hábitos:** um cartão por hábito com o calendário do mês e
+  o contador da meta (vezes por semana ou por mês, ela escolhe em cada um). Os
+  treinos entram sozinhos como um hábito automático. Dá para marcar dias
+  anteriores tocando no calendário e ver os meses passados.
 - **Ciclo e divisão:** de 1 a 5 dias por semana, por 4 a 6 semanas. Os
   exercícios ficam fixos durante o ciclo e os treinos andam em fila.
 - **Treino em andamento:** uma série por vez, com carga e repetições já
@@ -17,8 +25,20 @@ ela fez e cuida da pausa.
   ligada (cada item liga e desliga em Configurações).
 - **Progressão de carga:** guardada por exercício, vale para qualquer treino
   e ciclo. A tela Ciclo mostra a carga atual e a melhor marca de cada um.
+- **Hábitos (aba):** criar, editar e excluir hábitos, com nome, meta e cor.
 - **Configurações:** tempo de pausa, comportamento durante o treino e apagar
   os dados.
+
+## Hábitos: incentivar sem destacar as falhas
+
+- Os dias feitos ficam cheios, na cor do hábito. Os outros ficam neutros,
+  sem X nem vermelho.
+- Não existe contagem de dias seguidos: ela zera na primeira falha e
+  desanima em hábitos que não são diários. O app só soma o que foi feito.
+- O resumo do mês só mostra conquistas: quantas vezes ela fez e em quantas
+  semanas bateu a meta.
+- Quando a meta é batida, aparece o selo "Meta batida" e um aviso na hora.
+- As semanas começam na segunda-feira.
 
 ## Progressão de carga (dupla progressão)
 
@@ -55,13 +75,17 @@ central-de-treino/
     ├── dados/
     │   ├── exercicios.js       banco de exercícios (exemplo)
     │   └── modelos.js          divisões de 1 a 5 dias
+    ├── habitos/
+    │   └── regras-dos-habitos.js  metas, contagens e resumo do mês
     ├── treino/
     │   ├── gerador.js          monta os treinos do ciclo
     │   ├── regras-do-ciclo.js  ciclo, fila, semanas e histórico
     │   ├── sessao.js           treino em andamento (séries, pausa, finalizar)
     │   └── progressao.js       regras da progressão de carga
     ├── telas/
-    │   ├── hoje.js             barra da semana + treino do dia
+    │   ├── hoje.js             Início: botão do treino + hábitos (rota #/hoje)
+    │   ├── habitos.js          lista de hábitos
+    │   ├── habito.js           criar e editar um hábito
     │   ├── sessao.js           treino em andamento
     │   ├── novo-ciclo.js       escolher dias e semanas
     │   ├── ciclo.js            treinos, histórico, cargas atuais
@@ -70,6 +94,7 @@ central-de-treino/
     │   └── comum.js            partes usadas por mais de uma tela
     ├── ui/
     │   ├── componentes.js      anilha, barra, ficha
+    │   ├── calendario.js       cartão de hábito com o calendário do mês
     │   ├── cronometro.js       relógio da pausa, bipe, vibração e tela ligada
     │   ├── avisos.js           aviso com "Desfazer" e confirmação
     │   └── html.js             templates com escape automático
@@ -115,6 +140,7 @@ e abra `http://localhost:8000`.
 | Exercícios (nome, equipamento, incremento da carga)  | `js/dados/exercicios.js`   |
 | Divisões, séries, repetições e cardio                | `js/dados/modelos.js`      |
 | Regras da progressão                                 | `js/treino/progressao.js`  |
+| Cores e sugestões de hábitos                         | `js/habitos/regras-dos-habitos.js` |
 | Valores iniciais e limites das configurações         | `js/config.js`             |
 | Cores, fonte, espaçamentos                           | `css/estilos.css`          |
 
@@ -128,19 +154,20 @@ Por enquanto, no navegador do celular dela (`localStorage`, chave
 tudo: é provisório até ligarmos a planilha. Os dados da versão anterior são
 convertidos sozinhos na primeira abertura.
 
-Formato salvo (versão 2): `ciclos` (com o histórico e as séries de cada
+Formato salvo (versão 3): `ciclos` (com o histórico e as séries de cada
 treino), `progressao` (carga atual, última vez e melhor marca por exercício),
-`configuracoes` e `sessaoEmAndamento`.
+`habitos` (nome, cor, meta e dias feitos), `configuracoes` e
+`sessaoEmAndamento`.
 
 Quando o Google Planilhas entrar, cada parte vira uma aba: **Exercícios**,
-**Modelos**, **Ciclo**, **Sessões**, **Séries** e **Progressão**.
+**Modelos**, **Ciclo**, **Sessões**, **Séries**, **Progressão** e **Hábitos**.
 
 ## Próximos passos
 
 1. Adaptador do Google Planilhas (Apps Script) no lugar de
    `armazenamento/local.js`.
 2. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
-3. Avaliações (bioimpedância), hábitos e dieta.
+3. Avaliações (bioimpedância) e dieta.
 
 ---
 
