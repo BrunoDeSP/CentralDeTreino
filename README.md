@@ -12,6 +12,7 @@ o rastreador de hábitos.
   contador da meta (ex.: 2/3), o botão "Começar treino" (ou "Criar ciclo",
   que monta o ciclo e já abre o primeiro treino) e os hábitos com o
   calendário do mês.
+- **Configurações:** abertas pela engrenagem no canto do Início.
 - **Rastreador de hábitos (Início):** um cartão por hábito com o calendário
   do mês, troca de mês e o contador da meta (vezes por semana ou por mês, ela
   escolhe em cada um). O check no canto marca o dia de hoje, e tocar num dia
@@ -28,10 +29,17 @@ o rastreador de hábitos.
 - **Progressão de carga:** guardada por exercício, vale para qualquer treino
   e ciclo. A tela Ciclo mostra a carga atual e a melhor marca de cada um.
 - **Hábitos (aba):** criar, editar e excluir hábitos, com nome, meta e cor.
-  Abaixo, o mês de cada hábito em quadradinhos (cada coluna é uma semana, as
-  linhas vão de segunda a domingo), com troca de mês e o total do mês.
-- **Configurações:** tempo de pausa, comportamento durante o treino e apagar
-  os dados.
+  Abaixo, 4 meses de cada hábito em quadradinhos, como no GitHub (cada coluna
+  é uma semana, as linhas vão de segunda a domingo), com os dias feitos em
+  verde e troca de mês.
+- **Exercícios (aba):** os exercícios já feitos, separados em Inferiores,
+  Superiores, Core e Cardio, com a carga atual e quantas vezes ela fez cada
+  um. A página de cada exercício tem o gráfico da evolução, quantas vezes ela
+  fez com cada carga e o histórico com as séries.
+- **Cardio:** registrado no fim do treino (tipo e minutos). É opcional e não
+  conta nas séries.
+- **Configurações (engrenagem):** tempo de pausa, comportamento durante o
+  treino e apagar os dados.
 
 ## Hábitos: incentivar sem destacar as falhas
 
@@ -80,13 +88,15 @@ central-de-treino/
     │   └── local.js            salva no navegador do celular
     ├── dados/
     │   ├── exercicios.js       banco de exercícios (exemplo)
-    │   └── modelos.js          divisões de 1 a 5 dias
+    │   ├── modelos.js          divisões de 1 a 5 dias
+    │   └── regioes.js          regiões do corpo e tipos de cardio
     ├── habitos/
     │   └── regras-dos-habitos.js  metas, contagens e resumo do mês
     ├── treino/
     │   ├── gerador.js          monta os treinos do ciclo
     │   ├── regras-do-ciclo.js  ciclo, fila, semanas e histórico
-    │   ├── sessao.js           treino em andamento (séries, pausa, finalizar)
+    │   ├── sessao.js           treino em andamento (séries, cardio, pausa, finalizar)
+    │   ├── historico.js        histórico de cada exercício, para a aba Exercícios
     │   └── progressao.js       regras da progressão de carga
     ├── telas/
     │   ├── hoje.js             Início: botão do treino + hábitos (rota #/hoje)
@@ -97,10 +107,13 @@ central-de-treino/
     │   ├── ciclo.js            treinos, histórico, cargas atuais
     │   ├── treino.js           ficha de qualquer treino do ciclo
     │   ├── configuracoes.js    pausa, opções do treino e dados
+    │   ├── exercicios.js       aba Exercícios, por região do corpo
+    │   ├── exercicio.js        página de um exercício (gráfico, cargas, histórico)
     │   └── comum.js            partes usadas por mais de uma tela
     ├── ui/
     │   ├── componentes.js      anilha, barra, ficha
     │   ├── calendario.js       semana do treino, calendário do mês e quadradinhos
+    │   ├── grafico.js          gráfico de linha em SVG
     │   ├── cronometro.js       relógio da pausa, bipe, vibração e tela ligada
     │   ├── avisos.js           aviso com "Desfazer" e confirmação
     │   └── html.js             templates com escape automático

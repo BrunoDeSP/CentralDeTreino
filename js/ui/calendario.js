@@ -1,5 +1,5 @@
 import { html, cru } from './html.js';
-import { hojeISO, inicioDaSemana, somarDias, dataPorExtenso, diasDoMes, diaDaSemana, nomeDoMes, mesDe, somarMeses } from '../util/datas.js';
+import { hojeISO, inicioDaSemana, somarDias, diferencaDias, dataPorExtenso, diasDoMes, diaDaSemana, nomeDoMes, mesDe, somarMeses } from '../util/datas.js';
 import { progressoAtual, periodosDourados, textoDaMeta } from '../habitos/regras-dos-habitos.js';
 import { plural } from '../util/texto.js';
 
@@ -9,11 +9,13 @@ import { plural } from '../util/texto.js';
 // - cartaoDeHabito: Início. Calendário do mês com os números dos dias; as
 //   semanas com a meta batida ficam douradas e os dias feitos continuam na
 //   cor do hábito. O dourado aparece só no Início.
-// - cartaoDeQuadrados: aba Hábitos. O mesmo mês em quadradinhos (colunas são
-//   semanas, linhas vão de segunda a domingo), sem dourado.
+// - cartaoDeQuadrados: aba Hábitos. Vários meses em quadradinhos, como no
+//   GitHub (colunas são semanas, linhas vão de segunda a domingo), dias feitos
+//   em verde e sem dourado.
 
 const DIAS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
 const LETRAS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const ICONE_FEITO = cru('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12.5l4 4 8-9" /></svg>');
 const SETA_ESQUERDA = cru('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>');
 const SETA_DIREITA = cru('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>');
@@ -59,12 +61,12 @@ export function semanaDeTreino(habito, hoje, { recemFeito = false } = {}) {
 
 // --- Navegação de mês (Início e aba Hábitos) ----------------------------------
 
-export function navegacaoDeMes(mes) {
+export function navegacaoDeMes(mes, { rotulo = null } = {}) {
   const noMesAtual = mesmoMes(mes, mesDe(hojeISO()));
   return html`
     <div class="mes">
       <button class="mes-botao" type="button" data-acao="mes" data-delta="-1" data-foco="mes-anterior" aria-label="Mês anterior">${SETA_ESQUERDA}</button>
-      <span class="mes-nome" aria-live="polite">${capitalizar(nomeDoMes(mes))}</span>
+      <span class="mes-nome" aria-live="polite">${rotulo ?? capitalizar(nomeDoMes(mes))}</span>
       <button class="mes-botao" type="button" data-acao="mes" data-delta="1" data-foco="mes-seguinte" aria-label="Mês seguinte" ${noMesAtual ? cru('disabled') : ''}>${SETA_DIREITA}</button>
     </div>`;
 }
@@ -195,32 +197,59 @@ function resumoDoMes(habito, dias, mes, noMesAtual, quantidadeDourada) {
   return html`<p class="habito-resumo">${partes.join(', ')}</p>`;
 }
 
-// --- Cartão de quadradinhos da aba Hábitos (sem dourado) ---------------------
+// --- Quadradinhos da aba Hábitos: vários meses lado a lado, como no GitHub ----
 
-export function cartaoDeQuadrados(habito, { hoje, mes }) {
-  const dias = diasDoMes(mes);
+export const MESES_NOS_QUADRADINHOS = 4;
+
+// Primeiro e último dia dos meses mostrados, terminando em mesFinal.
+export function periodoDosQuadradinhos(mesFinal) {
+  const primeiroMes = somarMeses(mesFinal, -(MESES_NOS_QUADRADINHOS - 1));
+  return { primeiroMes, inicio: diasDoMes(primeiroMes)[0], fim: diasDoMes(mesFinal).at(-1) };
+}
+
+// "Julho a outubro de 2026"
+export function rotuloDoPeriodo(mesFinal) {
+  const { primeiroMes } = periodoDosQuadradinhos(mesFinal);
+  const inicio = nomeDoMes(primeiroMes, { comAno: primeiroMes.ano !== mesFinal.ano });
+  return capitalizar(`${inicio} a ${nomeDoMes(mesFinal)}`);
+}
+
+// Colunas são semanas e linhas vão de segunda a domingo. Os dias feitos ficam
+// verdes em todos os hábitos, e os quadradinhos ocupam a largura toda.
+export function cartaoDeQuadrados(habito, { hoje, mesFinal }) {
+  const { inicio, fim } = periodoDosQuadradinhos(mesFinal);
+  const primeiraSegunda = inicioDaSemana(inicio);
+  const semanas = Math.ceil((diferencaDias(primeiraSegunda, fim) + 1) / 7);
   const feitos = new Set(habito.dias);
-  const deslocamento = diaDaSemana(dias[0]);
-  const semanas = Math.ceil((deslocamento + dias.length) / 7);
-  const total = dias.filter((data) => feitos.has(data)).length;
+  const partes = [['seg', 0], ['qua', 2], ['sex', 4]].map(([nome, linha]) => html`<span class="quadros-letra" style="grid-row: ${linha + 2}" aria-hidden="true">${nome}</span>`);
+  let total = 0;
 
-  const partes = LETRAS.map((letra, i) => html`<span class="quadros-letra" style="grid-row: ${i + 1}" aria-hidden="true">${letra}</span>`);
-  dias.forEach((data, i) => {
-    const feito = feitos.has(data);
-    const classes = ['quadro', feito ? 'quadro--feito' : '', data === hoje ? 'quadro--hoje' : '', data > hoje ? 'quadro--futuro' : ''].join(' ');
-    const estilo = `grid-row: ${((deslocamento + i) % 7) + 1}; grid-column: ${Math.floor((deslocamento + i) / 7) + 2}`;
-    partes.push(html`<span class="${classes}" style="${estilo}" role="img" aria-label="${dataPorExtenso(data)}${feito ? ', feito' : ''}"></span>`);
-  });
+  for (let coluna = 0; coluna < semanas; coluna++) {
+    const segunda = somarDias(primeiraSegunda, coluna * 7);
+    for (let linha = 0; linha < 7; linha++) {
+      const data = somarDias(segunda, linha);
+      if (data < inicio || data > fim) continue;
+      if (data.endsWith('-01')) {
+        partes.push(html`<span class="quadros-mes" style="grid-column: ${coluna + 2}" aria-hidden="true">${MESES[mesDe(data).mes]}</span>`);
+      }
+      const feito = feitos.has(data);
+      if (feito) total += 1;
+      const classes = ['quadro', feito ? 'quadro--feito' : '', data === hoje ? 'quadro--hoje' : '', data > hoje ? 'quadro--futuro' : ''].join(' ');
+      partes.push(html`<span class="${classes}" style="grid-row: ${linha + 2}; grid-column: ${coluna + 2}" role="img" aria-label="${dataPorExtenso(data)}${feito ? ', feito' : ''}"></span>`);
+    }
+  }
 
   const unidade = habito.automatico ? (total === 1 ? 'treino' : 'treinos') : (total === 1 ? 'vez' : 'vezes');
   return html`
-    <article class="habito" data-cor="${habito.cor}">
-      <h3 class="habito-nome">${habito.nome}</h3>
-      <p class="habito-meta">${textoDaMeta(habito.meta)}${habito.automatico ? ', marcado pelos treinos' : ''}</p>
-      <div class="quadros-corpo">
-        <div class="quadros" style="--semanas: ${semanas}" role="group" aria-label="${habito.nome} em ${nomeDoMes(mes)}">${partes}</div>
-        <p class="quadros-total"><strong>${total}</strong><span>${unidade} em ${nomeDoMes(mes, { comAno: false })}</span></p>
-      </div>
+    <article class="habito">
+      <header class="quadros-cabeca">
+        <div>
+          <h3 class="habito-nome">${habito.nome}</h3>
+          <p class="habito-meta">${textoDaMeta(habito.meta)}${habito.automatico ? ', marcado pelos treinos' : ''}</p>
+        </div>
+        <p class="quadros-total"><strong>${total}</strong><span>${unidade}</span></p>
+      </header>
+      <div class="quadros" style="--semanas: ${semanas}" role="group" aria-label="${habito.nome}: ${total} ${unidade} no período">${partes}</div>
     </article>`;
 }
 

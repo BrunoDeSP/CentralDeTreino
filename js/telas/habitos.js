@@ -1,18 +1,18 @@
 import { html } from '../ui/html.js';
-import { cartaoDeQuadrados, navegacaoDeMes, moverMes } from '../ui/calendario.js';
+import { cartaoDeQuadrados, navegacaoDeMes, moverMes, rotuloDoPeriodo } from '../ui/calendario.js';
 import { habitoDosTreinos, textoDaMeta } from '../habitos/regras-dos-habitos.js';
 import { hojeISO, mesDe } from '../util/datas.js';
 
 // Aba Hábitos: configurar cada hábito (o Treinos fica sempre em primeiro) e,
-// abaixo, o calendário do mês em quadradinhos, com troca de mês.
+// abaixo, os quadradinhos de vários meses, como no GitHub, com troca de mês.
 
 export const titulo = 'Hábitos';
 
-let mesVisivel = null;
+let mesFinal = null; // último mês mostrado nos quadradinhos
 
 export function render(_params, { estado }) {
   const hoje = hojeISO();
-  mesVisivel ??= mesDe(hoje);
+  mesFinal ??= mesDe(hoje);
   const treinos = habitoDosTreinos(estado);
 
   return html`
@@ -45,18 +45,18 @@ export function render(_params, { estado }) {
 
     <section class="secao" aria-labelledby="titulo-calendario">
       <h2 id="titulo-calendario">Calendário</h2>
-      ${navegacaoDeMes(mesVisivel)}
-      ${[treinos, ...estado.habitos].map((habito) => cartaoDeQuadrados(habito, { hoje, mes: mesVisivel }))}
+      ${navegacaoDeMes(mesFinal, { rotulo: rotuloDoPeriodo(mesFinal) })}
+      ${[treinos, ...estado.habitos].map((habito) => cartaoDeQuadrados(habito, { hoje, mesFinal }))}
     </section>`;
 }
 
 export function aoSair() {
-  mesVisivel = null;
+  mesFinal = null;
 }
 
 export const acoes = {
   mes({ delta }, ctx) {
-    mesVisivel = moverMes(mesVisivel, Number(delta));
+    mesFinal = moverMes(mesFinal, Number(delta));
     ctx.render();
   },
 };

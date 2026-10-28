@@ -2,6 +2,7 @@ import { buscarExercicio } from '../dados/exercicios.js';
 import { cicloAtivo, buscarTreino, concluirTreino, desfazerSessao } from './regras-do-ciclo.js';
 import { usaCarga, avaliarExercicio, registroDe } from './progressao.js';
 import { hojeISO } from '../util/datas.js';
+import { TIPOS_DE_CARDIO, MINUTOS_DE_CARDIO } from '../dados/regioes.js';
 
 // Treino em andamento: séries marcadas, cargas, repetições e pausa.
 // É salvo a cada toque, então fechar o app no meio do treino não perde nada.
@@ -40,8 +41,32 @@ export function iniciarSessao(estado, treinoId) {
         };
       }),
     pausa: null,
+    cardio: cardioInicial(estado, treino),
   };
   return estado.sessaoEmAndamento;
+}
+
+// Cardio do fim do treino: começa com o tipo e os minutos da última vez.
+function cardioInicial(estado, treino) {
+  if (!treino.cardio) return null;
+  const ultimo = estado.ciclos
+    .flatMap((ciclo) => ciclo.sessoes)
+    .filter((sessao) => sessao.cardio)
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .at(-1)?.cardio;
+  return {
+    tipo: ultimo?.tipo ?? TIPOS_DE_CARDIO[0].id,
+    minutos: ultimo?.minutos ?? treino.cardio.minutos[0],
+    meta: treino.cardio,
+    feito: false,
+  };
+}
+
+export function definirCardio(sessao, campos) {
+  if (!sessao?.cardio) return;
+  Object.assign(sessao.cardio, campos);
+  const { min, max } = MINUTOS_DE_CARDIO;
+  sessao.cardio.minutos = Math.min(max, Math.max(min, Math.round(Number(sessao.cardio.minutos) || min)));
 }
 
 // Começa com o que ela fez na última vez com a mesma carga; senão, com o mínimo da meta.
@@ -138,6 +163,10 @@ export function finalizarSessao(estado) {
       alvo: item.alvo,
       series: item.series.filter((serie) => serie.feita).map(({ carga, reps }) => ({ carga, reps })),
     }));
+  }
+
+  if (registro && sessao.cardio?.feito) {
+    registro.cardio = { tipo: sessao.cardio.tipo, minutos: sessao.cardio.minutos };
   }
 
   const progressaoAntes = {};

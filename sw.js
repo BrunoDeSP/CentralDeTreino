@@ -5,7 +5,7 @@
 // atualização. Sem internet, usa a cópia guardada. Ao criar arquivos novos,
 // adicione-os em ARQUIVOS para já ficarem disponíveis offline.
 
-const CACHE = 'central-de-treino-v4';
+const CACHE = 'central-de-treino-v5';
 
 const ARQUIVOS = [
   './',
@@ -22,14 +22,18 @@ const ARQUIVOS = [
   './js/armazenamento/local.js',
   './js/dados/exercicios.js',
   './js/dados/modelos.js',
+  './js/dados/regioes.js',
   './js/habitos/regras-dos-habitos.js',
   './js/treino/gerador.js',
+  './js/treino/historico.js',
   './js/treino/progressao.js',
   './js/treino/regras-do-ciclo.js',
   './js/treino/sessao.js',
   './js/telas/ciclo.js',
   './js/telas/comum.js',
   './js/telas/configuracoes.js',
+  './js/telas/exercicio.js',
+  './js/telas/exercicios.js',
   './js/telas/habito.js',
   './js/telas/habitos.js',
   './js/telas/hoje.js',
@@ -39,6 +43,7 @@ const ARQUIVOS = [
   './js/ui/avisos.js',
   './js/ui/calendario.js',
   './js/ui/componentes.js',
+  './js/ui/grafico.js',
   './js/ui/cronometro.js',
   './js/ui/html.js',
   './js/util/datas.js',

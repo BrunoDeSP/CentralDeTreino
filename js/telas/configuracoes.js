@@ -32,6 +32,7 @@ export function render(_params, { estado }) {
   const { min, max } = CONFIG.pausa;
 
   return html`
+    <a class="voltar" href="#/hoje" data-acao="voltar">Voltar</a>
     <h1>Configurações</h1>
 
     <section class="secao secao--primeira">

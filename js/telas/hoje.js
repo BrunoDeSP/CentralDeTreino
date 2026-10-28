@@ -21,7 +21,12 @@ export function render(_params, { estado, extras }) {
   const treinos = habitoDosTreinos(estado);
 
   return html`
-    <h1 class="inicio-data">${capitalizar(dataPorExtenso(hoje))}</h1>
+    <div class="inicio-topo">
+      <h1 class="inicio-data">${capitalizar(dataPorExtenso(hoje))}</h1>
+      <a class="inicio-ajustes" href="#/configuracoes" aria-label="Configurações">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" /><circle cx="12" cy="12" r="6.6" /></svg>
+      </a>
+    </div>
 
     <section class="painel-treino" aria-label="Treino">
       ${avisoDeFimDoCiclo(estado)}

@@ -16,6 +16,7 @@ import {
   encerrarPausa,
   pausaAtiva,
   cancelarSessao,
+  definirCardio,
 } from '../treino/sessao.js';
 import {
   prepararAudio,
@@ -28,6 +29,7 @@ import {
 } from '../ui/cronometro.js';
 import { kg, numero, tempo } from '../util/texto.js';
 import { finalizarComAviso } from './comum.js';
+import { TIPOS_DE_CARDIO, MINUTOS_DE_CARDIO } from '../dados/regioes.js';
 
 // Treino em andamento: uma série por vez, com a carga sugerida, o registro do
 // que ela fez e o cronômetro de pausa. Tudo é salvo a cada toque.
@@ -66,6 +68,8 @@ export function render(_params, { estado }) {
       </div>
 
       ${sessao.circuito ? porVolta(sessao, atual, estado) : porExercicio(sessao, atual, estado)}
+
+      ${sessao.cardio ? cartaoDeCardio(sessao, atual) : ''}
 
       <div class="sessao-fim" id="fim-do-treino">
         <button class="botao botao--anilha" type="button" data-acao="finalizar" data-foco="finalizar">Finalizar treino</button>
@@ -226,6 +230,55 @@ function infoDeCarga(exercicio, registro, naSerie = false) {
   return html`<div class="exercicio-info ${naSerie ? 'exercicio-info--na-serie' : ''}">${linhas}</div>`;
 }
 
+// Cardio no fim do treino: tipo e minutos. É opcional e não conta nas séries.
+function cartaoDeCardio(sessao, atual) {
+  const { tipo, minutos, meta, feito } = sessao.cardio;
+  const nomeDoTipo = TIPOS_DE_CARDIO.find((opcao) => opcao.id === tipo)?.nome ?? 'Cardio';
+  const [minimo, maximo] = meta.minutos;
+  const daVez = !feito && !atual;
+  return html`
+    <section class="exercicio exercicio--cardio ${daVez ? 'exercicio--atual' : ''} ${feito ? 'exercicio--feito' : ''}" ${feito ? '' : cru('id="cardio-atual"')}>
+      <header class="exercicio-cabeca">
+        <span class="exercicio-numero">${feito ? ICONE_FEITO : sessao.itens.length + 1}</span>
+        <div>
+          <h2 class="exercicio-nome">Cardio no final</h2>
+          <p class="exercicio-alvo">Meta: ${minimo} a ${maximo} minutos, ritmo ${meta.ritmo}</p>
+        </div>
+      </header>
+      ${feito
+        ? html`
+          <ol class="series">
+            <li class="serie serie--feita serie--nomeada">
+              <span class="serie-rotulo">${nomeDoTipo}</span>
+              <span class="serie-valores">${minutos} min</span>
+              <button class="serie-marca" type="button" data-acao="cardio-concluir" data-foco="cardio-marca" aria-pressed="true" aria-label="Cardio feito. Toque para desmarcar.">${ICONE_FEITO}</button>
+            </li>
+          </ol>`
+        : html`
+          <div class="cardio">
+            <fieldset class="cardio-tipos">
+              <legend class="passo-rotulo">Tipo</legend>
+              <div class="chips">
+                ${TIPOS_DE_CARDIO.map((opcao) => html`
+                  <label class="chip">
+                    <input type="radio" name="cardio-tipo" value="${opcao.id}" ${opcao.id === tipo ? cru('checked') : ''}>
+                    <span>${opcao.nome}</span>
+                  </label>`)}
+              </div>
+            </fieldset>
+            <div class="passo passo--cardio">
+              <label class="passo-rotulo" for="cardio-minutos">Minutos</label>
+              <div class="passo-controle">
+                <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-delta="-1" data-foco="cardio-menos" aria-label="Menos minutos">−</button>
+                <input class="passo-valor" id="cardio-minutos" name="cardio-minutos" type="number" inputmode="numeric" min="${MINUTOS_DE_CARDIO.min}" max="${MINUTOS_DE_CARDIO.max}" step="1" value="${minutos}">
+                <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-delta="1" data-foco="cardio-mais" aria-label="Mais minutos">+</button>
+              </div>
+            </div>
+            <button class="botao botao--anilha" type="button" data-acao="cardio-concluir" data-foco="cardio-concluir">Concluir cardio</button>
+          </div>`}
+    </section>`;
+}
+
 // Barra fixa no rodapé: botão de pausa ou o cronômetro rodando.
 function barraDePausa(sessao, configuracoes) {
   if (pausaAtiva(sessao)) {
@@ -269,7 +322,9 @@ export function aoSair() {
 
 export function depoisDeRenderizar(extras) {
   if (!extras.rolar) return;
-  const alvo = document.getElementById('serie-atual') ?? document.getElementById('fim-do-treino');
+  const alvo = document.getElementById('serie-atual')
+    ?? document.getElementById('cardio-atual')
+    ?? document.getElementById('fim-do-treino');
   const semAnimacao = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   alvo?.scrollIntoView({ block: 'center', behavior: semAnimacao ? 'auto' : 'smooth' });
 }
@@ -361,6 +416,23 @@ export const acoes = {
     ctx.render();
   },
 
+  async 'cardio-ajustar'({ delta }, ctx) {
+    await ctx.alterar((estado) => {
+      const sessao = sessaoAtual(estado);
+      definirCardio(sessao, { minutos: sessao.cardio.minutos + Number(delta) * MINUTOS_DE_CARDIO.passo });
+    });
+    ctx.render();
+  },
+
+  async 'cardio-concluir'(_dados, ctx) {
+    const feito = await ctx.alterar((estado) => {
+      const sessao = sessaoAtual(estado);
+      sessao.cardio.feito = !sessao.cardio.feito;
+      return sessao.cardio.feito;
+    });
+    ctx.render({ rolar: feito });
+  },
+
   async finalizar(_dados, ctx) {
     const { feitas, total } = progresso(sessaoAtual(ctx.estado));
     if (feitas < total) {
@@ -396,6 +468,12 @@ export const acoes = {
 // Carga ou repetições digitadas direto no campo.
 export async function aoMudar(evento, ctx) {
   const campoAlterado = evento.target;
+  if (campoAlterado.name === 'cardio-tipo' || campoAlterado.name === 'cardio-minutos') {
+    const campos = campoAlterado.name === 'cardio-tipo' ? { tipo: campoAlterado.value } : { minutos: Number(campoAlterado.value) };
+    await ctx.alterar((estado) => definirCardio(sessaoAtual(estado), campos));
+    ctx.render();
+    return;
+  }
   if (!['carga', 'reps'].includes(campoAlterado.name)) return;
   const texto = String(campoAlterado.value).replace(',', '.');
   const valor = texto === '' ? null : Number(texto);

@@ -1888,75 +1888,6 @@ button.dia--feito:active {
   animation: marcar-dia 0.35s cubic-bezier(0.25, 0.9, 0.3, 1.4);
 }
 
-/* Quadradinhos do mês na aba Hábitos: colunas são semanas, linhas vão de segunda a domingo */
-.quadros-corpo {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.9rem;
-}
-
-.quadros {
-  display: grid;
-  grid-template-columns: auto repeat(var(--semanas), 1.55rem);
-  grid-auto-rows: 1.55rem;
-  gap: 3px;
-}
-
-.quadros-letra {
-  grid-column: 1;
-  align-self: center;
-  padding-right: 0.35rem;
-  color: var(--tinta-suave);
-  font-size: 0.625rem;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.quadro {
-  border-radius: 5px;
-  background: var(--quadro-vazio);
-}
-
-.quadro--feito {
-  background: var(--habito);
-}
-
-.quadro--hoje {
-  box-shadow: inset 0 0 0 1.5px var(--tinta);
-}
-
-.quadro--hoje.quadro--feito {
-  box-shadow: inset 0 0 0 1.5px var(--habito), inset 0 0 0 3px var(--superficie);
-}
-
-.quadro--futuro {
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--quadro-vazio);
-}
-
-.quadros-total {
-  display: grid;
-  justify-items: end;
-  text-align: right;
-}
-
-.quadros-total strong {
-  color: var(--habito);
-  font-size: 2.441rem;
-  font-weight: 800;
-  font-stretch: 75%;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.quadros-total span {
-  max-width: 7rem;
-  color: var(--tinta-suave);
-  font-size: 0.8125rem;
-}
-
 @keyframes marcar-dia {
   from { transform: scale(0.6); }
   to   { transform: none; }
@@ -2080,6 +2011,338 @@ button.dia--feito:active {
 
 .botao--texto-perigo {
   color: var(--perigo);
+}
+
+/* --- Verde dos dias feitos e dos gráficos -------------------------------- */
+
+:root {
+  --verde: #2DA44E;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --verde: #3FB950;
+  }
+}
+
+/* --- Engrenagem das configurações no Início ------------------------------ */
+
+.inicio-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.inicio-ajustes {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-right: -0.5rem;
+  border-radius: 50%;
+  color: var(--tinta-suave);
+}
+
+.inicio-ajustes svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* --- Quadradinhos da aba Hábitos, como no GitHub ------------------------- */
+
+.quadros-cabeca {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quadros-total {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+  text-align: right;
+}
+
+.quadros-total strong {
+  color: var(--verde);
+  font-size: 1.953rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variant-numeric: tabular-nums;
+}
+
+.quadros-total span {
+  margin-top: 0.2rem;
+  color: var(--tinta-suave);
+  font-size: 0.75rem;
+}
+
+.quadros {
+  display: grid;
+  grid-template-columns: auto repeat(var(--semanas), minmax(0, 1fr));
+  gap: 2px;
+  margin-top: 0.9rem;
+}
+
+.quadros-mes {
+  grid-row: 1;
+  color: var(--tinta-suave);
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.quadros-letra {
+  grid-column: 1;
+  align-self: center;
+  padding-right: 0.3rem;
+  color: var(--tinta-suave);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.quadro {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--quadro-vazio);
+}
+
+.quadro--feito {
+  background: var(--verde);
+}
+
+.quadro--hoje {
+  box-shadow: inset 0 0 0 1.5px var(--tinta);
+}
+
+.quadro--futuro {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--quadro-vazio);
+}
+
+/* --- Cardio no fim do treino --------------------------------------------- */
+
+.cardio {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding: 1rem;
+  border-top: 1px solid var(--linha);
+  background: var(--fundo);
+}
+
+.cardio .botao--anilha {
+  margin-top: 0;
+}
+
+.cardio-tipos {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip {
+  position: relative;
+}
+
+.chip input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.chip span {
+  display: grid;
+  place-items: center;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1.5px var(--linha-forte);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.chip input:checked + span {
+  background: var(--tinta);
+  color: var(--fundo);
+  box-shadow: none;
+}
+
+.chip input:focus-visible + span {
+  outline: 3px solid var(--tinta);
+  outline-offset: 2px;
+}
+
+.passo--cardio {
+  max-width: 12rem;
+}
+
+/* --- Aba Exercícios ------------------------------------------------------ */
+
+.nota-final {
+  margin-top: 2rem;
+  font-size: 0.9375rem;
+}
+
+.cartao {
+  padding: 1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.destaques {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.25rem 0 0;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.destaques > div {
+  padding: 0.8rem 0.75rem;
+}
+
+.destaques > div + div {
+  border-left: 1px solid var(--linha);
+}
+
+.destaques dt {
+  color: var(--tinta-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.destaques dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.grafico {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grafico-grade {
+  stroke: var(--linha);
+  stroke-width: 1;
+}
+
+.grafico-area {
+  fill: var(--verde);
+  opacity: 0.12;
+}
+
+.grafico-linha {
+  fill: none;
+  stroke: var(--verde);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.grafico-ponto {
+  fill: var(--superficie);
+  stroke: var(--verde);
+  stroke-width: 2;
+}
+
+.grafico-ponto--ultimo {
+  fill: var(--verde);
+}
+
+.grafico-texto {
+  fill: var(--tinta-suave);
+  font-family: var(--fonte);
+  font-size: 10px;
+}
+
+.grafico-valor {
+  fill: var(--tinta);
+  font-family: var(--fonte);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cargas {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--linha);
+}
+
+.carga-linha {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--linha);
+}
+
+.carga-valor {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+}
+
+.carga-barra {
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--quadro-vazio);
+}
+
+.carga-barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--verde);
+}
+
+.carga-vezes {
+  display: grid;
+  justify-items: end;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.carga-vezes small {
+  color: var(--tinta-suave);
+  font-size: 0.8125rem;
+  font-weight: 500;
 }
 
 /* --- Telas maiores ------------------------------------------------------- */
