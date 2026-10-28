@@ -5,6 +5,16 @@ export const CONFIG = {
   semanasPorCiclo: { opcoes: [4, 5, 6], padrao: 4 },
   // Local usado ao montar o ciclo enquanto não definimos onde ela treina.
   localPadrao: 'academia',
+  // Limites do tempo de pausa (em segundos) na tela de Configurações.
+  pausa: { min: 15, max: 300, passo: 15 },
+};
+
+// Valores iniciais da tela de Configurações.
+export const CONFIGURACOES_PADRAO = {
+  pausaSegundos: 90,
+  pausaAutomatica: false, // começar a pausa sozinha ao concluir uma série
+  alertaFimDaPausa: true, // som e vibração quando a pausa acaba
+  telaLigada: true, // manter a tela ligada durante o treino
 };
 
 // Equipamentos de cada local. Um exercício só entra no treino se tudo o que

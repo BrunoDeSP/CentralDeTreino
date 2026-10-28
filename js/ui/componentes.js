@@ -1,5 +1,7 @@
 import { html } from './html.js';
 import { buscarExercicio } from '../dados/exercicios.js';
+import { usaCarga } from '../treino/progressao.js';
+import { kg, duracao } from '../util/texto.js';
 
 // Cada treino tem a cor de uma anilha olímpica: A vermelha, B azul,
 // C amarela, D verde, E branca. A cor acompanha o treino no app inteiro.
@@ -54,15 +56,16 @@ export function cabecalhoDoTreino(treino, nivelTitulo = 'h2') {
     </header>`;
 }
 
-// A ficha de treino: exercícios na ordem em que devem ser feitos.
-export function ficha(treino) {
+// A ficha de treino: exercícios na ordem em que devem ser feitos, com a
+// carga sugerida de cada um quando ela já existe.
+export function ficha(treino, progressao = {}) {
   return html`
     <ol class="ficha">
-      ${treino.exercicios.map((item, indice) => linhaDaFicha(item, indice, treino.formato))}
+      ${treino.exercicios.map((item, indice) => linhaDaFicha(item, indice, treino.formato, progressao[item.exercicioId]))}
     </ol>`;
 }
 
-function linhaDaFicha(item, indice, formato) {
+function linhaDaFicha(item, indice, formato, registro) {
   const exercicio = buscarExercicio(item.exercicioId);
   const nome = exercicio?.nome ?? 'Sem exercício para este local';
   const grupo = exercicio?.grupo ?? 'Adicione um exercício deste tipo ao banco';
@@ -73,31 +76,32 @@ function linhaDaFicha(item, indice, formato) {
         <span class="ficha-nome">${nome}</span>
         <span class="ficha-grupo">${grupo}</span>
       </span>
-      <span class="ficha-dose">${dose(item, exercicio, formato)}</span>
+      <span class="ficha-dose">${dose(item, exercicio, formato, registro)}</span>
     </li>`;
 }
 
-function dose(item, exercicio, formato) {
+function dose(item, exercicio, formato, registro) {
   const { min, max, medida } = item.alvo;
   const faixa = min === max ? `${min}` : `${min}–${max}`;
   const unidade = medida === 'segundos' ? ' s' : '';
   const principal = formato === 'circuito' ? `${faixa}${unidade}` : `${item.series} × ${faixa}${unidade}`;
+  const carga = usaCarga(exercicio) && Number.isFinite(registro?.carga) ? kg(registro.carga) : null;
   return html`
     <strong>${principal}</strong>
-    ${exercicio?.porLado ? html`<span class="ficha-lado">cada lado</span>` : ''}`;
+    ${exercicio?.porLado ? html`<span class="ficha-lado">cada lado</span>` : ''}
+    ${carga ? html`<span class="ficha-carga">${carga}</span>` : ''}`;
 }
 
-// Como fazer, descanso e cardio.
-export function detalhesDoTreino(treino) {
+// Como fazer, pausa (das Configurações) e cardio.
+export function detalhesDoTreino(treino, configuracoes) {
   const circuito = treino.formato === 'circuito';
   const linhas = [];
 
   if (circuito) {
     linhas.push(['Como fazer', `Um exercício atrás do outro, ${treino.voltas} voltas`]);
   }
-  if (treino.descanso) {
-    const [min, max] = treino.descanso.segundos;
-    linhas.push(['Descanso', `${min}–${max} s entre ${circuito ? 'voltas' : 'séries'}`]);
+  if (configuracoes?.pausaSegundos) {
+    linhas.push(['Pausa', `${duracao(configuracoes.pausaSegundos)} entre ${circuito ? 'voltas' : 'séries'}`]);
   }
   if (treino.cardio) {
     const [min, max] = treino.cardio.minutos;

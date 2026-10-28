@@ -1,17 +1,28 @@
 import { armazenamento } from './armazenamento/index.js';
+import { CONFIGURACOES_PADRAO } from './config.js';
 
-// Estado completo do app. Formato salvo:
+// Estado completo do app. Formato salvo (versão 2):
 // {
-//   versao: 1,
+//   versao: 2,
 //   cicloAtivoId: 'ciclo_...' | null,
-//   ciclos: [ { id, status, inicio, fim, diasPorSemana, semanas, local, treinos, proximo, sessoes } ]
+//   ciclos: [ { id, status, inicio, fim, diasPorSemana, semanas, local, treinos, proximo, sessoes } ],
+//   progressao: { [exercicioId]: { carga, decisao, semEvoluir, ultima, recorde } },
+//   configuracoes: { pausaSegundos, pausaAutomatica, alertaFimDaPausa, telaLigada },
+//   sessaoEmAndamento: null | { cicloId, treinoId, data, iniciadaEm, circuito, itens, pausa }
 // }
 
-const VERSAO = 1;
+const VERSAO = 2;
 let estado = null;
 
 export function estadoVazio() {
-  return { versao: VERSAO, cicloAtivoId: null, ciclos: [] };
+  return {
+    versao: VERSAO,
+    cicloAtivoId: null,
+    ciclos: [],
+    progressao: {},
+    configuracoes: { ...CONFIGURACOES_PADRAO },
+    sessaoEmAndamento: null,
+  };
 }
 
 export async function carregarEstado() {
@@ -37,9 +48,17 @@ export async function apagarTudo() {
   estado = estadoVazio();
 }
 
-// Quando o formato salvo mudar, as conversões entram aqui.
+// Converte dados salvos por versões antigas do app, sem perder nada.
 function migrar(salvo) {
   if (!salvo || typeof salvo !== 'object' || !Array.isArray(salvo.ciclos)) return null;
-  if (salvo.versao === VERSAO) return salvo;
-  return null;
+  const migrado = { ...salvo };
+
+  // Versão 1 → 2: entram progressão de carga, configurações e treino em andamento.
+  if (migrado.versao === 1) migrado.versao = 2;
+  if (migrado.versao !== VERSAO) return null;
+
+  migrado.progressao ??= {};
+  migrado.configuracoes = { ...CONFIGURACOES_PADRAO, ...migrado.configuracoes };
+  migrado.sessaoEmAndamento ??= null;
+  return migrado;
 }

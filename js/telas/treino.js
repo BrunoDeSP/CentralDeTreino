@@ -1,7 +1,7 @@
 import { html } from '../ui/html.js';
 import { cabecalhoDoTreino, ficha, detalhesDoTreino } from '../ui/componentes.js';
 import { cicloAtivo, buscarTreino, proximoTreino } from '../treino/regras-do-ciclo.js';
-import { concluirComAviso } from './comum.js';
+import { concluirComAviso, iniciarOuContinuar, botoesDoTreino, faixaDeSessao } from './comum.js';
 
 // Ficha de qualquer treino do ciclo (aberta pela lista na tela Ciclo).
 
@@ -23,19 +23,19 @@ export function render([treinoId], { estado }) {
 
   return html`
     <a class="voltar" href="#/ciclo" data-acao="voltar">Voltar</a>
+    ${faixaDeSessao(estado, treino.id)}
     <section class="treino-do-dia treino-do-dia--pagina" data-anilha="${treino.id.toLowerCase()}">
       ${cabecalhoDoTreino(treino, 'h1')}
-      ${ficha(treino)}
-      ${detalhesDoTreino(treino)}
+      ${ficha(treino, estado.progressao)}
+      ${detalhesDoTreino(treino, estado.configuracoes)}
       ${proximo.id === treino.id
         ? ''
         : html`<p class="nota">O próximo da fila é o ${proximo.nome}. Se você fizer este agora, a fila continua a partir dele.</p>`}
-      <button class="botao botao--anilha" type="button" data-acao="concluir" data-treino="${treino.id}">
-        Concluir treino ${treino.id}
-      </button>
+      ${botoesDoTreino(treino, estado)}
     </section>`;
 }
 
 export const acoes = {
+  iniciar: ({ treino }, ctx) => iniciarOuContinuar(treino, ctx),
   concluir: ({ treino }, ctx) => concluirComAviso(treino, ctx),
 };

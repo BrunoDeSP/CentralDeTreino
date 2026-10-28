@@ -1,11 +1,11 @@
 // Service worker: deixa o app abrir sem internet (academia com sinal ruim).
 //
-// Estratégia "rede primeiro": com internet, sempre baixa a versão mais nova
-// (você não precisa mexer aqui a cada atualização). Sem internet, usa a cópia
-// guardada. Ao criar arquivos novos, adicione-os em ARQUIVOS para já ficarem
-// disponíveis offline desde a primeira visita.
+// Estratégia "rede primeiro": com internet, sempre confere no servidor se há
+// versão nova, então basta subir os arquivos para o celular receber a
+// atualização. Sem internet, usa a cópia guardada. Ao criar arquivos novos,
+// adicione-os em ARQUIVOS para já ficarem disponíveis offline.
 
-const CACHE = 'central-de-treino-v1';
+const CACHE = 'central-de-treino-v2';
 
 const ARQUIVOS = [
   './',
@@ -22,15 +22,20 @@ const ARQUIVOS = [
   './js/armazenamento/local.js',
   './js/dados/exercicios.js',
   './js/dados/modelos.js',
-  './js/treino/regras-do-ciclo.js',
   './js/treino/gerador.js',
+  './js/treino/progressao.js',
+  './js/treino/regras-do-ciclo.js',
+  './js/treino/sessao.js',
   './js/telas/ciclo.js',
   './js/telas/comum.js',
+  './js/telas/configuracoes.js',
   './js/telas/hoje.js',
   './js/telas/novo-ciclo.js',
+  './js/telas/sessao.js',
   './js/telas/treino.js',
   './js/ui/avisos.js',
   './js/ui/componentes.js',
+  './js/ui/cronometro.js',
   './js/ui/html.js',
   './js/util/datas.js',
   './js/util/texto.js',
@@ -62,7 +67,8 @@ self.addEventListener('fetch', (evento) => {
 async function redePrimeiro(pedido) {
   const cache = await caches.open(CACHE);
   try {
-    const resposta = await fetch(pedido);
+    // "no-cache" pergunta ao servidor se o arquivo mudou, sem esperar o cache do navegador vencer.
+    const resposta = await fetch(pedido.mode === 'navigate' ? pedido.url : pedido, { cache: 'no-cache' });
     if (resposta.ok) cache.put(pedido, resposta.clone());
     return resposta;
   } catch {

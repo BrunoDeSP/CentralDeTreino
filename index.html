@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Central de Treino</title>
-  <meta name="description" content="Treinos da semana, ciclo e histórico.">
+  <meta name="description" content="Treinos da semana, ciclo, cargas e histórico.">
 
   <meta name="theme-color" content="#ECEFF2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1C2129" media="(prefers-color-scheme: dark)">
@@ -33,6 +33,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" /><path d="M19.5 4.5v4h-4" /></svg>
       <span>Ciclo</span>
     </a>
+    <a href="#/configuracoes" data-aba="configuracoes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></svg>
+      <span>Configurações</span>
+    </a>
   </nav>
 
   <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
@@ -42,7 +46,7 @@
       <h2 id="dialogo-titulo" data-titulo></h2>
       <p data-texto></p>
       <div class="dialogo-acoes">
-        <button class="botao botao--secundario" value="nao">Cancelar</button>
+        <button class="botao botao--secundario" value="nao">Voltar</button>
         <button class="botao" value="sim" data-confirmar>Confirmar</button>
       </div>
     </form>

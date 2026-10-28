@@ -1,7 +1,8 @@
 import { html } from '../ui/html.js';
 import { anilha, semanasDoCiclo } from '../ui/componentes.js';
 import { avisar, confirmar } from '../ui/avisos.js';
-import { apagarTudo } from '../estado.js';
+import { buscarExercicio } from '../dados/exercicios.js';
+import { usaCarga } from '../treino/progressao.js';
 import {
   cicloAtivo,
   ciclosEncerrados,
@@ -11,10 +12,10 @@ import {
   cicloConcluido,
 } from '../treino/regras-do-ciclo.js';
 import { dataCurta, dataComDiaDaSemana } from '../util/datas.js';
-import { plural } from '../util/texto.js';
+import { plural, kg } from '../util/texto.js';
 import { telaSemCiclo } from './comum.js';
 
-// Visão do ciclo: treinos da divisão, semanas, histórico e ações.
+// Visão do ciclo: treinos da divisão, semanas, histórico, cargas atuais e ações.
 
 export const titulo = 'Ciclo';
 
@@ -23,7 +24,7 @@ export function render(_params, { estado }) {
   const anteriores = ciclosEncerrados(estado).reverse();
 
   if (!ciclo) {
-    return html`${telaSemCiclo(estado)} ${listaDeAnteriores(anteriores)} ${opcoesAvancadas()}`;
+    return html`${telaSemCiclo(estado)} ${cargasAtuais(estado)} ${listaDeAnteriores(anteriores)}`;
   }
 
   const semana = semanaDoCiclo(ciclo);
@@ -60,13 +61,14 @@ export function render(_params, { estado }) {
       ${historico(ciclo)}
     </section>
 
+    ${cargasAtuais(estado)}
+
     <section class="secao acoes">
       <a class="botao botao--secundario" href="#/novo-ciclo">Mudar dias por semana</a>
       <button class="botao botao--texto" type="button" data-acao="encerrar">Encerrar ciclo</button>
     </section>
 
-    ${listaDeAnteriores(anteriores)}
-    ${opcoesAvancadas()}`;
+    ${listaDeAnteriores(anteriores)}`;
 }
 
 function historico(ciclo) {
@@ -76,15 +78,58 @@ function historico(ciclo) {
   const recentesPrimeiro = [...ciclo.sessoes].reverse();
   return html`
     <ul class="lista">
-      ${recentesPrimeiro.map((sessao) => html`
-        <li class="lista-item lista-item--fixo">
-          ${anilha(sessao.treinoId, { tamanho: 'p' })}
-          <span class="lista-texto">
-            <span class="lista-titulo">Treino ${sessao.treinoId}</span>
-            <span class="lista-sub">${dataComDiaDaSemana(sessao.data)}</span>
-          </span>
-        </li>`)}
+      ${recentesPrimeiro.map((sessao) => {
+        const series = (sessao.series ?? []).reduce((total, item) => total + item.series.length, 0);
+        return html`
+          <li class="lista-item lista-item--fixo">
+            ${anilha(sessao.treinoId, { tamanho: 'p' })}
+            <span class="lista-texto">
+              <span class="lista-titulo">Treino ${sessao.treinoId}</span>
+              <span class="lista-sub">
+                ${dataComDiaDaSemana(sessao.data)}${series ? `, ${plural(series, 'série registrada', 'séries registradas')}` : ''}
+              </span>
+            </span>
+          </li>`;
+      })}
     </ul>`;
+}
+
+// Carga atual de cada exercício já feito. Vale para qualquer treino e ciclo.
+function cargasAtuais(estado) {
+  const registros = Object.entries(estado.progressao ?? {})
+    .map(([id, registro]) => ({ exercicio: buscarExercicio(id), registro }))
+    .filter(({ exercicio }) => exercicio)
+    .sort((a, b) => a.exercicio.nome.localeCompare(b.exercicio.nome, 'pt-BR'));
+  if (registros.length === 0) return '';
+
+  return html`
+    <section class="secao">
+      <h2>Cargas atuais</h2>
+      <p class="texto-apoio secao-ajuda">Valem para qualquer treino e ciclo, e mudam quando você finaliza um treino.</p>
+      <ul class="lista">
+        ${registros.map(({ exercicio, registro }) => html`
+          <li class="lista-item lista-item--fixo">
+            <span class="lista-texto">
+              <span class="lista-titulo">${exercicio.nome}</span>
+              <span class="lista-sub">${melhorMarca(registro)}</span>
+            </span>
+            <span class="lista-valor">${valorAtual(exercicio, registro)}</span>
+          </li>`)}
+      </ul>
+    </section>`;
+}
+
+function valorAtual(exercicio, registro) {
+  if (Number.isFinite(registro.carga)) return kg(registro.carga);
+  if (usaCarga(exercicio)) return '— kg'; // fez sem informar a carga
+  return exercicio.requer.includes('elastico') ? 'Elástico' : 'Peso do corpo';
+}
+
+function melhorMarca({ recorde, ultima }) {
+  if (!recorde) return '';
+  const unidade = ultima?.alvo?.medida === 'segundos' ? 's' : 'reps';
+  const marca = recorde.carga === null ? `${recorde.reps} ${unidade}` : `${kg(recorde.carga)} × ${recorde.reps}`;
+  return `Melhor marca: ${marca}, em ${dataCurta(recorde.data)}`;
 }
 
 function listaDeAnteriores(anteriores) {
@@ -104,38 +149,16 @@ function listaDeAnteriores(anteriores) {
     </section>`;
 }
 
-function opcoesAvancadas() {
-  return html`
-    <details class="avancado">
-      <summary>Opções avançadas</summary>
-      <p>Apaga ciclos e histórico guardados neste celular. Não dá para desfazer.</p>
-      <button class="botao botao--perigo" type="button" data-acao="apagar-tudo">Apagar todos os dados</button>
-    </details>`;
-}
-
 export const acoes = {
   async encerrar(_dados, ctx) {
     const ok = await confirmar({
       titulo: 'Encerrar ciclo?',
-      texto: 'O histórico continua salvo. Depois é só montar um novo ciclo.',
+      texto: 'O histórico e as cargas continuam salvos. Depois é só montar um novo ciclo.',
       botao: 'Encerrar ciclo',
     });
     if (!ok) return;
     await ctx.alterar((estado) => encerrarCiclo(estado));
     ctx.render();
     avisar('Ciclo encerrado');
-  },
-
-  async 'apagar-tudo'(_dados, ctx) {
-    const ok = await confirmar({
-      titulo: 'Apagar todos os dados?',
-      texto: 'Ciclos e histórico deste celular serão apagados. Não dá para desfazer.',
-      botao: 'Apagar tudo',
-      perigo: true,
-    });
-    if (!ok) return;
-    await apagarTudo();
-    ctx.ir('#/hoje');
-    avisar('Dados apagados');
   },
 };

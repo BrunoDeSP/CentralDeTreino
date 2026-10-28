@@ -4,10 +4,21 @@ import * as hoje from './telas/hoje.js';
 import * as ciclo from './telas/ciclo.js';
 import * as treino from './telas/treino.js';
 import * as novoCiclo from './telas/novo-ciclo.js';
+import * as sessao from './telas/sessao.js';
+import * as configuracoes from './telas/configuracoes.js';
 
 // Rotas por "#" (ex.: #/treino/B) funcionam no GitHub Pages sem configuração extra.
-const ROTAS = { hoje, ciclo, treino, 'novo-ciclo': novoCiclo };
-const ABA_DA_ROTA = { hoje: 'hoje', ciclo: 'ciclo', treino: 'ciclo', 'novo-ciclo': 'ciclo' };
+const ROTAS = { hoje, ciclo, treino, 'novo-ciclo': novoCiclo, sessao, configuracoes };
+
+// Aba marcada em cada tela. O treino em andamento esconde as abas.
+const ABA_DA_ROTA = {
+  hoje: 'hoje',
+  ciclo: 'ciclo',
+  treino: 'ciclo',
+  'novo-ciclo': 'ciclo',
+  sessao: null,
+  configuracoes: 'configuracoes',
+};
 
 const conteudo = document.getElementById('conteudo');
 let telaAtual = null;
@@ -26,15 +37,25 @@ function contexto(extras = {}) {
 function renderizar(extras = null) {
   const { nome, params } = lerRota();
   const tela = ROTAS[nome];
-  if (telaAtual && telaAtual !== tela) telaAtual.aoSair?.();
+  const trocouDeTela = telaAtual !== tela;
+  if (telaAtual && trocouDeTela) telaAtual.aoSair?.();
   telaAtual = tela;
 
   const extrasDaVez = extras ?? extrasPendentes ?? {};
   extrasPendentes = null;
+  const foco = document.activeElement?.dataset?.foco;
 
   conteudo.innerHTML = String(tela.render(params, contexto(extrasDaVez)));
   document.title = `${tela.titulo} | Central de Treino`;
+  document.body.classList.toggle('em-treino', nome === 'sessao');
   marcarAba(ABA_DA_ROTA[nome]);
+
+  // Devolve o foco ao mesmo botão depois de redesenhar (ex.: botões + e −).
+  if (foco && !trocouDeTela) {
+    conteudo.querySelector(`[data-foco="${CSS.escape(foco)}"]`)?.focus({ preventScroll: true });
+  }
+  if (trocouDeTela) tela.aoEntrar?.(contexto());
+  tela.depoisDeRenderizar?.(extrasDaVez);
 }
 
 // Navega para uma rota levando dados extras (ex.: qual anilha animar).
@@ -91,7 +112,15 @@ conteudo.addEventListener('click', async (evento) => {
   }
 });
 
-conteudo.addEventListener('change', (evento) => telaAtual?.aoMudar?.(evento, contexto()));
+conteudo.addEventListener('change', async (evento) => {
+  if (!telaAtual?.aoMudar) return;
+  try {
+    await telaAtual.aoMudar(evento, contexto());
+  } catch (erro) {
+    console.error(erro);
+    avisar('Não deu para salvar. Tente de novo.');
+  }
+});
 
 conteudo.addEventListener('submit', async (evento) => {
   evento.preventDefault();

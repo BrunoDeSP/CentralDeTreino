@@ -1,33 +1,54 @@
 # Central de Treino
 
-Site para acompanhar os treinos pelo celular. Esta primeira versão cuida da
-montagem do treino: ela escolhe quantos dias por semana quer treinar, o app
-monta a divisão, organiza a semana como uma fila e guarda o histórico.
+Site para acompanhar os treinos pelo celular. Ela escolhe quantos dias por
+semana quer treinar, o app monta a divisão e organiza a semana. Durante o
+treino, o app mostra uma série por vez com a carga sugerida, registra o que
+ela fez e cuida da pausa.
+
+## O que o app faz
+
+- **Ciclo e divisão:** de 1 a 5 dias por semana, por 4 a 6 semanas. Os
+  exercícios ficam fixos durante o ciclo e os treinos andam em fila.
+- **Treino em andamento:** uma série por vez, com carga e repetições já
+  preenchidas (ajustáveis no + e − ou digitando) e o botão "Concluir série".
+  Tudo é salvo a cada toque: fechar o app no meio não perde nada.
+- **Pausa:** botão que dispara um cronômetro, com +15, −15 e pular. Pode
+  começar sozinho ao concluir a série, tocar um bipe, vibrar e manter a tela
+  ligada (cada item liga e desliga em Configurações).
+- **Progressão de carga:** guardada por exercício, vale para qualquer treino
+  e ciclo. A tela Ciclo mostra a carga atual e a melhor marca de cada um.
+- **Configurações:** tempo de pausa, comportamento durante o treino e apagar
+  os dados.
+
+## Progressão de carga (dupla progressão)
+
+- Cada exercício tem uma meta de repetições (ex.: 10 a 12).
+- Fez **todas** as séries no topo da meta com a mesma carga: no próximo treino
+  a carga sobe o `incremento` do exercício (definido em `exercicios.js`).
+- Senão, a carga se mantém e o objetivo é fazer mais repetições.
+- Três treinos seguidos sem evoluir: o app sugere baixar a carga ou trocar o
+  exercício.
+- Exercícios sem carga (peso do corpo, elástico): ao bater o topo da meta, o
+  app avisa que dá para dificultar.
+- As repetições de cada série começam com o que ela fez da última vez com a
+  mesma carga. Se a carga subiu, começam no mínimo da meta.
+- "Já fiz, só marcar como feito" conta o treino sem mexer nas cargas.
 
 ## Estrutura de pastas
-
-Mantenha exatamente estas pastas ao subir para o GitHub:
 
 ```
 central-de-treino/
 ├── index.html                  página única do app
 ├── manifest.webmanifest        permite instalar na tela inicial
-├── sw.js                       funciona offline (academia com sinal ruim)
+├── sw.js                       funciona offline e busca atualizações
 ├── README.md
-├── css/
-│   └── estilos.css             visual (cores e tamanhos no topo do arquivo)
-├── fontes/
-│   ├── archivo-variavel.woff2  fonte Archivo, hospedada junto com o site
-│   └── OFL.txt                 licença da fonte
-├── icones/
-│   ├── icone-192.png
-│   ├── icone-512.png
-│   ├── icone-maskable-512.png
-│   └── apple-touch-icon.png
+├── css/estilos.css             visual (cores e tamanhos no topo do arquivo)
+├── fontes/                     fonte Archivo + licença
+├── icones/                     ícones do app
 └── js/
-    ├── app.js                  inicia o app, rotas (#/hoje, #/ciclo...) e eventos
-    ├── config.js               dias permitidos, duração do ciclo, equipamentos por local
-    ├── estado.js               carrega, altera e salva os dados
+    ├── app.js                  inicia o app, rotas (#/hoje, #/sessao...) e eventos
+    ├── config.js               dias, semanas, limites e valores iniciais das configurações
+    ├── estado.js               carrega, altera, salva e migra os dados
     ├── armazenamento/
     │   ├── index.js            ponto de troca: local hoje, planilha depois
     │   └── local.js            salva no navegador do celular
@@ -36,20 +57,25 @@ central-de-treino/
     │   └── modelos.js          divisões de 1 a 5 dias
     ├── treino/
     │   ├── gerador.js          monta os treinos do ciclo
-    │   └── regras-do-ciclo.js  ciclo, fila, semanas e histórico
+    │   ├── regras-do-ciclo.js  ciclo, fila, semanas e histórico
+    │   ├── sessao.js           treino em andamento (séries, pausa, finalizar)
+    │   └── progressao.js       regras da progressão de carga
     ├── telas/
     │   ├── hoje.js             barra da semana + treino do dia
+    │   ├── sessao.js           treino em andamento
     │   ├── novo-ciclo.js       escolher dias e semanas
-    │   ├── ciclo.js            treinos, histórico e ações do ciclo
+    │   ├── ciclo.js            treinos, histórico, cargas atuais
     │   ├── treino.js           ficha de qualquer treino do ciclo
+    │   ├── configuracoes.js    pausa, opções do treino e dados
     │   └── comum.js            partes usadas por mais de uma tela
     ├── ui/
     │   ├── componentes.js      anilha, barra, ficha
+    │   ├── cronometro.js       relógio da pausa, bipe, vibração e tela ligada
     │   ├── avisos.js           aviso com "Desfazer" e confirmação
     │   └── html.js             templates com escape automático
     └── util/
         ├── datas.js
-        └── texto.js
+        └── texto.js            plural, kg, tempo e duração
 ```
 
 ## Como testar no computador
@@ -62,48 +88,35 @@ pasta do projeto:
 python -m http.server 8000
 ```
 
-e abra `http://localhost:8000`. Para testar no celular na mesma rede Wi-Fi,
-use `http://IP-DO-COMPUTADOR:8000` (o modo offline só liga em `https` ou
-`localhost`, mas o resto funciona).
+e abra `http://localhost:8000`.
 
-## Publicar no GitHub Pages
+## Publicar e atualizar no GitHub Pages
 
-1. Crie um repositório e envie os arquivos mantendo as pastas, com o
-   `index.html` na raiz.
-2. Em **Settings → Pages → Build and deployment**, escolha
-   **Deploy from a branch**, branch `main`, pasta `/ (root)`.
-3. Em alguns minutos o site fica em
-   `https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/`.
-4. No celular dela: abrir o link no navegador e usar
-   **Adicionar à tela inicial**.
+- **Primeira vez:** envie os arquivos mantendo as pastas, com o `index.html`
+  na raiz. Em **Settings → Pages**, escolha **Deploy from a branch**, branch
+  `main`, pasta `/ (root)`.
+- **Atualizações:** cada entrega vem num zip só com os arquivos alterados, já
+  nas pastas certas. Extraia por cima do projeto e envie esses arquivos.
+- Se o celular ainda mostrar a versão antiga depois de publicar, feche e abra
+  o app de novo.
 
-## Como a montagem funciona
+## Limites do navegador
 
-- **Ciclo:** período de 4 a 6 semanas em que os exercícios não mudam, para a
-  progressão de carga ter com o que comparar.
-- **Modelo:** cada quantidade de dias tem uma divisão em `modelos.js`
-  (1 dia: corpo todo; 2 e 3 dias: corpo todo variado; 4 dias: pernas e
-  tronco alternados; 5 dias: pernas e tronco + circuito).
-- **Vagas:** cada treino é uma lista de vagas por padrão de movimento
-  (agachar, dobrar o quadril, empurrar, puxar, core...). O gerador preenche
-  cada vaga com um exercício do banco, em rodízio, para os treinos não
-  repetirem exercícios.
-- **Fila:** o próximo treino é sempre o seguinte ao último concluído, sem
-  ficar preso a dia da semana. Se ela fizer um treino fora da ordem, a fila
-  continua a partir dele.
-- **Semanas:** contam a partir do dia em que o ciclo começou. A meta da
-  semana é a quantidade de dias escolhida.
-- **Mudança definitiva de dias:** montar um novo ciclo encerra o atual. O
-  histórico continua salvo.
+- O bipe e a vibração só funcionam com o app aberto na tela. Com a opção
+  "Manter a tela ligada", o celular não bloqueia durante o treino.
+- O iPhone não vibra pelo navegador, então lá o aviso é só o bipe.
+- O cronômetro usa o horário de término: se a tela apagar, o tempo continua
+  certo quando ela voltar.
 
 ## Onde mexer
 
-| Quero mudar...                                   | Arquivo                   |
-| ------------------------------------------------ | ------------------------- |
-| Exercícios (nomes, equipamento, incremento)      | `js/dados/exercicios.js`  |
-| Divisões, séries, repetições, descanso, cardio   | `js/dados/modelos.js`     |
-| Dias permitidos, semanas, equipamentos por local | `js/config.js`            |
-| Cores, fonte, espaçamentos                       | `css/estilos.css`         |
+| Quero mudar...                                       | Arquivo                    |
+| ---------------------------------------------------- | -------------------------- |
+| Exercícios (nome, equipamento, incremento da carga)  | `js/dados/exercicios.js`   |
+| Divisões, séries, repetições e cardio                | `js/dados/modelos.js`      |
+| Regras da progressão                                 | `js/treino/progressao.js`  |
+| Valores iniciais e limites das configurações         | `js/config.js`             |
+| Cores, fonte, espaçamentos                           | `css/estilos.css`          |
 
 Ao criar um arquivo novo, adicione o caminho dele na lista `ARQUIVOS` do
 `sw.js` para ele também funcionar offline.
@@ -112,20 +125,22 @@ Ao criar um arquivo novo, adicione o caminho dele na lista `ARQUIVOS` do
 
 Por enquanto, no navegador do celular dela (`localStorage`, chave
 `central-de-treino`). Limpar os dados do navegador ou trocar de aparelho apaga
-tudo: é provisório até ligarmos a planilha. Nenhum dado pessoal vai para o
-repositório.
+tudo: é provisório até ligarmos a planilha. Os dados da versão anterior são
+convertidos sozinhos na primeira abertura.
 
-Quando o Google Planilhas entrar, cada parte vira uma aba:
-`exercicios.js` → **Exercícios**, `modelos.js` → **Modelos**, ciclos →
-**Ciclo**, treinos concluídos → **Sessões**, cargas → **Séries**.
+Formato salvo (versão 2): `ciclos` (com o histórico e as séries de cada
+treino), `progressao` (carga atual, última vez e melhor marca por exercício),
+`configuracoes` e `sessaoEmAndamento`.
+
+Quando o Google Planilhas entrar, cada parte vira uma aba: **Exercícios**,
+**Modelos**, **Ciclo**, **Sessões**, **Séries** e **Progressão**.
 
 ## Próximos passos
 
-1. Registro de carga e repetições por série, com a progressão de carga.
-2. Adaptador do Google Planilhas (Apps Script) no lugar de
+1. Adaptador do Google Planilhas (Apps Script) no lugar de
    `armazenamento/local.js`.
-3. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
-4. Avaliações (bioimpedância), hábitos e dieta.
+2. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
+3. Avaliações (bioimpedância), hábitos e dieta.
 
 ---
 

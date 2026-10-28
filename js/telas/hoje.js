@@ -3,7 +3,7 @@ import { barraDaSemana, cabecalhoDoTreino, ficha, detalhesDoTreino } from '../ui
 import { cicloAtivo, proximoTreino, resumoDaSemana, cicloConcluido } from '../treino/regras-do-ciclo.js';
 import { dataCurta } from '../util/datas.js';
 import { plural } from '../util/texto.js';
-import { concluirComAviso, telaSemCiclo } from './comum.js';
+import { concluirComAviso, iniciarOuContinuar, botoesDoTreino, faixaDeSessao, telaSemCiclo } from './comum.js';
 
 // Tela principal: como está a semana e qual é o treino de hoje.
 
@@ -11,13 +11,14 @@ export const titulo = 'Hoje';
 
 export function render(_params, { estado, extras }) {
   const ciclo = cicloAtivo(estado);
-  if (!ciclo) return telaSemCiclo(estado);
+  if (!ciclo) return html`${faixaDeSessao(estado)} ${telaSemCiclo(estado)}`;
 
   const resumo = resumoDaSemana(ciclo);
   const treino = proximoTreino(ciclo);
 
   return html`
     <h1 class="visualmente-oculto">Hoje</h1>
+    ${faixaDeSessao(estado, treino.id)}
     ${cicloConcluido(ciclo)
       ? avisoFimDoCiclo(ciclo)
       : html`<p class="contexto">Semana ${resumo.semana.numero} de ${ciclo.semanas}, de ${dataCurta(resumo.semana.inicio)} a ${dataCurta(resumo.semana.fim)}</p>`}
@@ -32,15 +33,14 @@ export function render(_params, { estado, extras }) {
       ${resumo.completa
         ? html`<p class="nota">A meta da semana já foi batida. Se quiser treinar mais, este é o próximo da fila.</p>`
         : ''}
-      ${ficha(treino)}
-      ${detalhesDoTreino(treino)}
-      <button class="botao botao--anilha" type="button" data-acao="concluir" data-treino="${treino.id}">
-        Concluir treino ${treino.id}
-      </button>
+      ${ficha(treino, estado.progressao)}
+      ${detalhesDoTreino(treino, estado.configuracoes)}
+      ${botoesDoTreino(treino, estado)}
     </section>`;
 }
 
 export const acoes = {
+  iniciar: ({ treino }, ctx) => iniciarOuContinuar(treino, ctx),
   concluir: ({ treino }, ctx) => concluirComAviso(treino, ctx),
 };
 

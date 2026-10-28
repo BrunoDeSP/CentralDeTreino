@@ -109,6 +109,11 @@ p { margin: 0; }
 
 a { color: inherit; }
 
+button,
+a {
+  touch-action: manipulation;
+}
+
 :focus-visible {
   outline: 3px solid var(--tinta);
   outline-offset: 3px;
@@ -853,6 +858,570 @@ a { color: inherit; }
   flex-direction: column-reverse;
   gap: 0.5rem;
   margin-top: 1.5rem;
+}
+
+/* --- Ações do treino (Hoje e página do treino) --------------------------- */
+
+.treino-acoes {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1.75rem;
+}
+
+.treino-acoes .botao--anilha,
+.faixa .botao--anilha,
+.sessao-fim .botao--anilha,
+.serie--atual .botao--anilha {
+  margin-top: 0;
+}
+
+.treino-acoes-nota {
+  margin-top: 0.4rem;
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.faixa--treino {
+  margin-bottom: 1.5rem;
+  border-color: var(--cor);
+}
+
+.faixa--treino[data-anilha="e"] {
+  border-color: var(--linha-forte);
+}
+
+.ficha-carga {
+  display: inline-block;
+  margin-top: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--fundo);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* --- Treino em andamento ------------------------------------------------- */
+
+body.em-treino .abas {
+  display: none;
+}
+
+body.em-treino .conteudo {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.em-treino .aviso {
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.sessao-cabeca {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.sessao-contagem {
+  margin-top: 0.3rem;
+  color: var(--tinta-suave);
+  font-size: 1.0625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sessao-progresso {
+  height: 0.5rem;
+  margin: 1.25rem 0 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--linha);
+}
+
+.sessao-progresso span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--cor);
+  transition: width 0.3s ease;
+}
+
+.sessao[data-anilha="e"] .sessao-progresso span {
+  background: var(--tinta);
+}
+
+.exercicio {
+  margin-top: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.exercicio--atual {
+  border-top: 4px solid var(--cor);
+}
+
+.sessao[data-anilha="e"] .exercicio--atual {
+  border-top-color: var(--linha-forte);
+}
+
+.exercicio-cabeca {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0;
+}
+
+.exercicio-numero {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--fundo);
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-stretch: 87.5%;
+}
+
+.exercicio--feito .exercicio-numero {
+  background: var(--tinta);
+  color: var(--fundo);
+}
+
+.exercicio-numero svg,
+.serie-marca svg {
+  width: 60%;
+  height: 60%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.exercicio-nome {
+  font-size: 1.25rem;
+  font-stretch: 87.5%;
+  line-height: 1.15;
+}
+
+.exercicio-alvo {
+  margin-top: 0.2rem;
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+}
+
+.exercicio-info {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.5rem 1rem 0 3.5rem;
+  font-size: 0.9375rem;
+}
+
+.exercicio-info--na-serie {
+  padding: 0;
+}
+
+.exercicio-info strong {
+  font-weight: 800;
+}
+
+.exercicio-ultima {
+  color: var(--tinta-suave);
+}
+
+.nota--compacta {
+  margin: 0.35rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--fundo);
+  font-size: 0.875rem;
+}
+
+.series {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--linha);
+}
+
+.serie {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.4rem 1rem;
+}
+
+.serie + .serie {
+  border-top: 1px solid var(--linha);
+}
+
+.serie-rotulo {
+  flex: none;
+  min-width: 4.25rem;
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.serie-valores {
+  flex: 1;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.serie--pendente .serie-valores {
+  color: var(--tinta-suave);
+  font-weight: 600;
+}
+
+.serie--nomeada .serie-rotulo {
+  flex: 1;
+  min-width: 0;
+  color: var(--tinta);
+}
+
+.serie--nomeada .serie-valores {
+  flex: none;
+}
+
+.serie-marca {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 2px solid var(--linha-forte);
+  border-radius: 50%;
+  background: transparent;
+}
+
+button.serie-marca {
+  border-color: var(--tinta);
+  background: var(--tinta);
+  color: var(--fundo);
+  cursor: pointer;
+}
+
+.serie--atual {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  background: var(--fundo);
+}
+
+.serie--atual .serie-rotulo {
+  color: var(--tinta);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+.serie-meta {
+  margin-top: -0.5rem;
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+}
+
+.serie-campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.serie-campos--um {
+  grid-template-columns: 1fr;
+}
+
+.passo {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.passo-rotulo {
+  color: var(--tinta-suave);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.passo-controle {
+  display: flex;
+  height: 3.25rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1.5px var(--linha-forte);
+}
+
+.passo-controle:focus-within {
+  box-shadow: inset 0 0 0 2.5px var(--tinta);
+}
+
+.passo-botao {
+  flex: none;
+  width: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tinta);
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.passo-botao:active {
+  background: var(--linha);
+}
+
+.passo-botao:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.passo-valor {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tinta);
+  font: inherit;
+  font-size: 1.375rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.passo-valor::-webkit-outer-spin-button,
+.passo-valor::-webkit-inner-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+
+.passo-valor:focus {
+  outline: none;
+}
+
+.sessao-fim {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 2rem;
+}
+
+/* Barra da pausa, fixa no rodapé durante o treino */
+.pausa {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 15;
+  padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  background: var(--tinta);
+  color: var(--fundo);
+}
+
+.pausa-interno {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 34rem;
+  margin-inline: auto;
+}
+
+.pausa-iniciar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fundo);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pausa-duracao {
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+}
+
+.pausa-tempo {
+  display: grid;
+  line-height: 1;
+}
+
+.pausa-rotulo {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.pausa-relogio {
+  font-size: 2.441rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variant-numeric: tabular-nums;
+}
+
+.pausa-botoes {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.pausa-botoes button {
+  min-width: 3.25rem;
+  min-height: 3rem;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.pausa-botoes .pausa-pular {
+  background: var(--fundo);
+  box-shadow: none;
+  color: var(--tinta);
+}
+
+.pausa :focus-visible {
+  outline-color: var(--fundo);
+}
+
+/* --- Configurações ------------------------------------------------------- */
+
+.secao--primeira {
+  margin-top: 1.75rem;
+}
+
+.secao-ajuda {
+  margin: -0.25rem 0 0.9rem;
+  font-size: 0.9375rem;
+}
+
+.ajuste {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.passo-botao--grande {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--linha-forte);
+  font-size: 1.75rem;
+}
+
+.ajuste-valor {
+  font-size: 2rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variant-numeric: tabular-nums;
+}
+
+.chave {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  cursor: pointer;
+}
+
+.chave-texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.chave-titulo {
+  display: block;
+  font-weight: 700;
+}
+
+.chave-ajuda {
+  display: block;
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+}
+
+.chave input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.chave-trilho {
+  position: relative;
+  flex: none;
+  width: 3.25rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--linha-forte);
+  transition: background-color 0.15s ease;
+}
+
+.chave-trilho::after {
+  content: "";
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.chave input:checked + .chave-trilho {
+  background: var(--anilha-d);
+}
+
+.chave input:checked + .chave-trilho::after {
+  transform: translateX(1.25rem);
+}
+
+.chave input:focus-visible + .chave-trilho {
+  outline: 3px solid var(--tinta);
+  outline-offset: 3px;
+}
+
+.lista-valor {
+  flex: none;
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- Telas maiores ------------------------------------------------------- */
