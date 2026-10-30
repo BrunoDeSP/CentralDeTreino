@@ -41,7 +41,7 @@ o rastreador de hábitos.
 - **Cardio:** registrado no fim do treino (tipo e minutos). É opcional e não
   conta nas séries.
 - **Configurações (engrenagem):** tempo de pausa, comportamento durante o
-  treino e apagar os dados.
+  treino, cópia na planilha e apagar os dados.
 
 ## Hábitos: incentivar sem destacar as falhas
 
@@ -138,6 +138,7 @@ central-de-treino/
 ├── manifest.webmanifest        permite instalar na tela inicial
 ├── sw.js                       funciona offline e busca atualizações
 ├── README.md
+├── apps-script/Codigo.gs       vai dentro da planilha (ver Cópia na planilha)
 ├── css/estilos.css             visual (cores e tamanhos no topo do arquivo)
 ├── fontes/                     fonte Archivo + licença
 ├── icones/                     ícones do app
@@ -146,8 +147,11 @@ central-de-treino/
     ├── config.js               dias, semanas, limites e valores iniciais das configurações
     ├── estado.js               carrega, altera, salva e migra os dados
     ├── armazenamento/
-    │   ├── index.js            ponto de troca: local hoje, planilha depois
-    │   └── local.js            salva no navegador do celular
+    │   ├── index.js            armazenamento local usado pelo app
+    │   ├── local.js            salva no navegador do celular
+    │   ├── sincronizacao.js    quando e o que mandar para a planilha
+    │   ├── planilha.js         conversa com o Apps Script
+    │   └── tabelas.js          monta as abas para ver na planilha
     ├── dados/
     │   ├── exercicios.js       exercícios do plano e alternativas
     │   ├── modelos.js          fases e treinos de 1 a 6 dias
@@ -226,6 +230,8 @@ e abra `http://localhost:8000`.
 | Regras da progressão                                 | `js/treino/progressao.js`  |
 | Cores e sugestões de hábitos                         | `js/habitos/regras-dos-habitos.js` |
 | Valores iniciais e limites das configurações         | `js/config.js`             |
+| Tempos da cópia na planilha                          | `js/config.js`             |
+| Colunas das abas da planilha                         | `js/armazenamento/tabelas.js` |
 | Cores, fonte, espaçamentos                           | `css/estilos.css`          |
 
 Ao criar um arquivo novo, adicione o caminho dele na lista `ARQUIVOS` do
@@ -233,27 +239,85 @@ Ao criar um arquivo novo, adicione o caminho dele na lista `ARQUIVOS` do
 
 ## Onde ficam os dados
 
-Por enquanto, no navegador do celular dela (`localStorage`, chave
-`central-de-treino`). Limpar os dados do navegador ou trocar de aparelho apaga
-tudo: é provisório até ligarmos a planilha. Os dados da versão anterior são
-convertidos sozinhos na primeira abertura.
+No navegador do celular dela (`localStorage`, chave `central-de-treino`), que
+é o dono dos dados. Com a planilha conectada, uma cópia vai para o Google
+Planilhas (seção abaixo), e é por ela que os dados voltam se o navegador for
+limpo ou se ela trocar de celular. Os dados da versão anterior são convertidos
+sozinhos na primeira abertura.
 
-Formato salvo (versão 5): `ciclos` (com o histórico e as séries de cada
+Formato salvo (versão 5): `revisao` (sobe a cada mudança; a cópia na
+planilha compara por ele), `ciclos` (com o histórico e as séries de cada
 treino, e em `extras` os dias a mais adicionados em cada semana),
 `progressao` (carga atual, última vez e melhor marca por exercício),
 `habitos` (nome, cor, meta e dias feitos), `habitoTreinos` (a meta dos
 treinos), `configuracoes` e `sessaoEmAndamento`.
 
-Quando o Google Planilhas entrar, cada parte vira uma aba: **Exercícios**,
-**Modelos**, **Ciclo**, **Sessões**, **Séries**, **Progressão** e **Hábitos**.
+## Cópia na planilha
+
+O app salva tudo no celular primeiro, o que é rápido e funciona sem sinal, e
+manda uma cópia para uma planilha do Google:
+
+- 8 segundos depois da última mudança;
+- durante um treino em andamento, só quando o app sai da tela, para não
+  gastar internet a cada série;
+- sem internet, ele tenta de novo em 1, 5 e 15 minutos e quando a conexão
+  volta. Configurações mostra quando foi o último envio.
+
+### Instalar (uma vez, na conta Google dela)
+
+1. Crie uma planilha nova no Google Planilhas, por exemplo "Central de Treino".
+2. Na planilha, abra **Extensões → Apps Script**. Apague o código de exemplo,
+   cole todo o conteúdo de `apps-script/Codigo.gs` e salve.
+3. No seletor de funções, escolha **configurar** e clique em **Executar**. O
+   Google pede autorização: escolha a conta dela, clique em **Avançado** e em
+   **Acessar** (o aviso de app não verificado é normal em script pessoal).
+   No registro de execução aparece a **chave do app**.
+4. Clique em **Implantar → Nova implantação**. Em tipo, escolha **App da Web**,
+   com **Executar como: eu** e **Quem pode acessar: qualquer pessoa**.
+   Implante e copie o endereço, que termina em `/exec`.
+5. No celular dela, abra o app, vá em **Configurações → Cópia na planilha**,
+   cole o endereço e a chave e toque em **Conectar planilha**.
+
+"Qualquer pessoa" só deixa o endereço responder. Sem a chave, a planilha
+recusa tudo. O endereço e a chave ficam só no celular, fora dos dados e do
+GitHub. Se a chave vazar, rode **trocarChave** no Apps Script e conecte o app
+de novo com a chave nova.
+
+Para atualizar o `Codigo.gs` no futuro: cole o código novo, salve e use
+**Implantar → Gerenciar implantações → editar (lápis) → Versão: nova versão**.
+Assim o endereço continua o mesmo.
+
+### O que fica na planilha
+
+| Aba        | O que tem                                                         |
+| ---------- | ----------------------------------------------------------------- |
+| Treinos    | Um treino por linha: data, nome, fase, dia a mais, séries e cardio |
+| Séries     | Cada série: exercício, carga, repetições (ou segundos) e meta      |
+| Cargas     | Carga atual de cada exercício, o que acontece na próxima vez e a melhor marca |
+| Hábitos    | Cada dia feito de cada hábito                                     |
+| Ciclos     | Cada ciclo: fase, dias por semana, treinos feitos e constância    |
+| Backup     | Escondida: a cópia completa que o app usa para restaurar. Não edite. |
+
+As abas são só para ver: elas são reescritas a cada envio, então o que for
+mudado nelas se perde. Os mais recentes ficam em cima.
+
+### Regras de segurança
+
+- **Só um aparelho salva na planilha.** Se outro tentar (um celular de teste ou
+  o antigo), a planilha recusa e o app pergunta o que fazer, sem apagar nada.
+- **Celular novo ou navegador limpo:** é só conectar de novo. Se o celular
+  estiver vazio, o app traz os dados da planilha sozinho. Se os dois lados
+  tiverem dados, ele pergunta qual manter.
+- **Apagar todos os dados** (Configurações) apaga só o celular e desconecta a
+  planilha, que continua com a cópia.
+- O Google Planilhas também guarda o histórico de versões (**Arquivo →
+  Histórico de versões**), mais uma rede de segurança.
 
 ## Próximos passos
 
-1. Adaptador do Google Planilhas (Apps Script) no lugar de
-   `armazenamento/local.js`.
-2. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
-3. Avaliações (bioimpedância) e dieta.
-4. Registrar um cardio extra num dia livre (o PDF sugere com 3 ou 4 dias).
+1. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
+2. Avaliações (bioimpedância) e dieta.
+3. Registrar um cardio extra num dia livre (o PDF sugere com 3 ou 4 dias).
 
 ---
 

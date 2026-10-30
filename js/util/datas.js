@@ -89,3 +89,15 @@ export function dataPorExtenso(iso) {
 export function nomeDoMes({ ano, mes }, { comAno = true } = {}) {
   return (comAno ? formatoMesAno : formatoMes).format(new Date(ano, mes, 1));
 }
+
+const formatoHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+// Data e hora de um instante salvo (ISO): "hoje, 18:42", "ontem, 09:10" ou "28/10, 18:42".
+export function dataEHora(instante) {
+  const data = new Date(instante);
+  if (Number.isNaN(data.getTime())) return '';
+  const dia = paraISO(data);
+  const hoje = hojeISO();
+  const quando = dia === hoje ? 'hoje' : dia === somarDias(hoje, -1) ? 'ontem' : dataCurta(dia);
+  return `${quando}, ${formatoHora.format(data)}`;
+}

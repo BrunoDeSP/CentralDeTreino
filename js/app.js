@@ -1,4 +1,5 @@
 import { carregarEstado, lerEstado, alterarEstado } from './estado.js';
+import { iniciarSincronizacao } from './armazenamento/sincronizacao.js';
 import { avisar } from './ui/avisos.js';
 import * as hoje from './telas/hoje.js';
 import * as ciclo from './telas/ciclo.js';
@@ -158,6 +159,7 @@ async function iniciar() {
   pilha.push(location.hash);
   await carregarEstado();
   renderizar();
+  iniciarSincronizacao(); // cópia na planilha, se estiver conectada
 }
 
 iniciar();

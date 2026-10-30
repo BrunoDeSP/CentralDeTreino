@@ -9,6 +9,13 @@ export const CONFIG = {
   pausa: { min: 15, max: 300, passo: 15 },
 };
 
+// Cópia na planilha (Google Planilhas + Apps Script). Tempos em milissegundos.
+export const PLANILHA = {
+  esperaDepoisDeMudar: 8000, // envia a cópia 8 s depois da última mudança
+  tempoLimite: 45000, // desiste se a planilha não responder neste tempo
+  novasTentativas: [60000, 300000, 900000], // sem conexão: tenta de novo em 1, 5 e 15 min
+};
+
 // Valores iniciais da tela de Configurações.
 export const CONFIGURACOES_PADRAO = {
   pausaSegundos: 90,
