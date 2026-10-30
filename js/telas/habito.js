@@ -9,16 +9,20 @@ import {
   editarHabito,
   excluirHabito,
   corLivre,
+  habitoDosTreinos,
+  definirMetaDosTreinos,
 } from '../habitos/regras-dos-habitos.js';
 
 // Criar ou editar um hábito: nome, meta (vezes por semana ou por mês) e cor.
-// Rotas: #/habito/novo e #/habito/<id>.
+// Rotas: #/habito/novo, #/habito/<id> e #/habito/treinos (só a meta dos treinos).
 
 export const titulo = 'Hábito';
 
 let rascunho = null; // { id, nome, cor, vezes, periodo }, antes de salvar
 
 export function render([id], { estado }) {
+  if (id === 'treinos') return formularioDosTreinos(estado);
+
   const novo = !id || id === 'novo';
   const habito = novo ? null : buscarHabito(estado, id);
 
@@ -36,7 +40,6 @@ export function render([id], { estado }) {
       ? { id: chave, nome: habito.nome, cor: habito.cor, vezes: habito.meta.vezes, periodo: habito.meta.periodo }
       : { id: chave, nome: '', cor: corLivre(estado), vezes: 3, periodo: 'semana' };
   }
-  const maximo = LIMITE_DA_META[rascunho.periodo];
 
   return html`
     <a class="voltar" href="#/habitos" data-acao="voltar">Voltar</a>
@@ -51,18 +54,7 @@ export function render([id], { estado }) {
           : ''}
       </div>
 
-      <fieldset class="escolha">
-        <legend>Meta</legend>
-        <div class="escolha-opcoes escolha-opcoes--texto" style="--colunas: 2">
-          ${opcao('periodo', 'semana', 'Por semana', rascunho.periodo === 'semana')}
-          ${opcao('periodo', 'mes', 'Por mês', rascunho.periodo === 'mes')}
-        </div>
-        <div class="ajuste ajuste--meta">
-          <button class="passo-botao passo-botao--grande" type="button" data-acao="vezes" data-delta="-1" data-foco="vezes-menos" aria-label="Menos vezes" ${rascunho.vezes <= 1 ? cru('disabled') : ''}>−</button>
-          <output class="ajuste-valor" aria-live="polite">${rascunho.vezes} ${rascunho.vezes === 1 ? 'vez' : 'vezes'}</output>
-          <button class="passo-botao passo-botao--grande" type="button" data-acao="vezes" data-delta="1" data-foco="vezes-mais" aria-label="Mais vezes" ${rascunho.vezes >= maximo ? cru('disabled') : ''}>+</button>
-        </div>
-      </fieldset>
+      ${campoDaMeta()}
 
       <fieldset class="escolha">
         <legend>Cor</legend>
@@ -78,6 +70,39 @@ export function render([id], { estado }) {
       <button class="botao" type="submit">${novo ? 'Criar hábito' : 'Salvar alterações'}</button>
       ${novo ? '' : html`<button class="botao botao--texto botao--texto-perigo" type="button" data-acao="excluir">Excluir hábito</button>`}
     </form>`;
+}
+
+// O hábito Treinos só tem a meta: os dias vêm dos treinos concluídos.
+function formularioDosTreinos(estado) {
+  if (!rascunho || rascunho.id !== 'treinos') {
+    const { meta } = habitoDosTreinos(estado);
+    rascunho = { id: 'treinos', vezes: meta.vezes, periodo: meta.periodo };
+  }
+  return html`
+    <a class="voltar" href="#/habitos" data-acao="voltar">Voltar</a>
+    <h1>Meta de treinos</h1>
+    <p class="texto-apoio pagina-intro">Os dias são marcados sozinhos quando você conclui um treino. A meta é separada do ciclo: os dias que passarem dela também contam.</p>
+    <form class="formulario" novalidate>
+      ${campoDaMeta()}
+      <button class="botao" type="submit">Salvar meta</button>
+    </form>`;
+}
+
+function campoDaMeta() {
+  const maximo = LIMITE_DA_META[rascunho.periodo];
+  return html`
+    <fieldset class="escolha">
+      <legend>Meta</legend>
+      <div class="escolha-opcoes escolha-opcoes--texto" style="--colunas: 2">
+        ${opcao('periodo', 'semana', 'Por semana', rascunho.periodo === 'semana')}
+        ${opcao('periodo', 'mes', 'Por mês', rascunho.periodo === 'mes')}
+      </div>
+      <div class="ajuste ajuste--meta">
+        <button class="passo-botao passo-botao--grande" type="button" data-acao="vezes" data-delta="-1" data-foco="vezes-menos" aria-label="Menos vezes" ${rascunho.vezes <= 1 ? cru('disabled') : ''}>−</button>
+        <output class="ajuste-valor" aria-live="polite">${rascunho.vezes} ${rascunho.vezes === 1 ? 'vez' : 'vezes'}</output>
+        <button class="passo-botao passo-botao--grande" type="button" data-acao="vezes" data-delta="1" data-foco="vezes-mais" aria-label="Mais vezes" ${rascunho.vezes >= maximo ? cru('disabled') : ''}>+</button>
+      </div>
+    </fieldset>`;
 }
 
 function opcao(nome, valor, rotulo, marcada) {
@@ -133,18 +158,24 @@ export const acoes = {
 };
 
 export async function aoEnviar(dados, ctx) {
+  const periodo = dados.get('periodo') ?? rascunho.periodo;
+
+  if (rascunho.id === 'treinos') {
+    const { vezes } = rascunho;
+    await ctx.alterar((estado) => definirMetaDosTreinos(estado, { vezes, periodo }));
+    rascunho = null;
+    ctx.ir('#/habitos');
+    avisar('Meta de treinos salva');
+    return;
+  }
+
   const nome = String(dados.get('nome') ?? '').trim();
   if (!nome) {
     avisar('Dê um nome para o hábito.');
     document.getElementById('habito-nome')?.focus();
     return;
   }
-  const valores = {
-    nome,
-    cor: dados.get('cor') ?? rascunho.cor,
-    periodo: dados.get('periodo') ?? rascunho.periodo,
-    vezes: rascunho.vezes,
-  };
+  const valores = { nome, cor: dados.get('cor') ?? rascunho.cor, periodo, vezes: rascunho.vezes };
   const novo = rascunho.id === 'novo';
   const id = rascunho.id;
   await ctx.alterar((estado) => (novo ? criarHabito(estado, valores) : editarHabito(buscarHabito(estado, id), valores)));

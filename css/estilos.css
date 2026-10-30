@@ -1434,6 +1434,16 @@ button.serie-marca {
   --habito-verde: #2B7A3B;
   --habito-grafite: #495057;
   --sobre-habito: #FFFFFF;
+
+  /* Dourado: semana (ou mês) com a meta batida */
+  --ouro: #D9A520;
+  --ouro-borda: #B8860B;
+  --ouro-texto: #7A5800;
+  --ouro-fundo: #FCF1D2;
+  --ouro-vazio: #F2DD9C;
+  --sobre-ouro: #1C2129;
+
+  --quadro-vazio: #E4E8ED;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1445,6 +1455,14 @@ button.serie-marca {
     --habito-verde: #51CF66;
     --habito-grafite: #ADB5BD;
     --sobre-habito: #1C2129;
+
+    --ouro: #E8C35A;
+    --ouro-borda: #E8C35A;
+    --ouro-texto: #F0CF6E;
+    --ouro-fundo: #3B3218;
+    --ouro-vazio: #5C4D20;
+
+    --quadro-vazio: #343B47;
   }
 }
 
@@ -1475,55 +1493,17 @@ button.serie-marca {
 }
 
 .painel-treino > .faixa {
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.painel-treino .treino-acoes {
+  margin-top: 1.25rem;
 }
 
 .painel-convite {
+  margin-bottom: 0.75rem;
   color: var(--tinta-suave);
   font-size: 1.0625rem;
-}
-
-.mes {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.25rem;
-  border: 1px solid var(--linha);
-  border-radius: 999px;
-  background: var(--superficie);
-}
-
-.mes-botao {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--tinta);
-  cursor: pointer;
-}
-
-.mes-botao:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-
-.mes-botao svg {
-  width: 1.25rem;
-  height: 1.25rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.mes-nome {
-  font-weight: 700;
 }
 
 .convite {
@@ -1534,6 +1514,117 @@ button.serie-marca {
   border: 1.5px dashed var(--linha-forte);
   border-radius: var(--raio);
   color: var(--tinta-suave);
+}
+
+/* Semana atual do treino, com o contador da meta */
+.semana-treino {
+  padding: 1rem;
+  border: 1px solid var(--linha);
+  border-radius: var(--raio);
+  background: var(--superficie);
+}
+
+.semana-treino--ouro {
+  border-color: var(--ouro-borda);
+  background: var(--ouro-fundo);
+  box-shadow: inset 0 0 0 1px var(--ouro-borda);
+}
+
+.semana-treino-cabeca {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.semana-treino-titulo {
+  font-size: 1.25rem;
+  font-stretch: 87.5%;
+}
+
+.semana-treino-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.semana-treino-meta strong {
+  color: var(--tinta);
+  font-size: 1.953rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.semana-treino--ouro .semana-treino-meta,
+.semana-treino--ouro .semana-treino-meta strong {
+  color: var(--ouro-texto);
+}
+
+.semana-dias {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.semana-dia {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0 0.45rem;
+  border-radius: 12px;
+  background: var(--fundo);
+}
+
+.semana-treino--ouro .semana-dia:not(.semana-dia--feito) {
+  background: var(--ouro-vazio);
+}
+
+.semana-dia-nome {
+  color: var(--tinta-suave);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.semana-dia-numero {
+  font-size: 1.125rem;
+  font-weight: 800;
+  font-stretch: 87.5%;
+  font-variant-numeric: tabular-nums;
+}
+
+.semana-dia--feito {
+  background: var(--tinta);
+  color: var(--fundo);
+}
+
+.semana-dia--feito .semana-dia-nome {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.semana-dia--hoje {
+  box-shadow: inset 0 0 0 2px var(--tinta);
+}
+
+.semana-dia--hoje.semana-dia--feito {
+  box-shadow: inset 0 0 0 2px var(--tinta), inset 0 0 0 4px var(--fundo);
+}
+
+.semana-dia--futuro {
+  opacity: 0.5;
+}
+
+.semana-dia--novo {
+  animation: marcar-dia 0.35s cubic-bezier(0.25, 0.9, 0.3, 1.4) 0.15s both;
 }
 
 /* --- Cartão de hábito ---------------------------------------------------- */
@@ -1567,23 +1658,30 @@ button.serie-marca {
   font-size: 0.875rem;
 }
 
-.habito-selo {
+/* Check de hoje, no canto do cartão */
+.habito-check {
   flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.65rem 0.3rem 0.45rem;
-  border-radius: 999px;
-  background: var(--habito);
-  color: var(--habito-texto);
-  font-size: 0.8125rem;
-  font-weight: 700;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 2px solid var(--habito);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--habito);
+  cursor: pointer;
 }
 
-.habito-selo svg,
-.habito-hoje svg {
-  width: 1.1rem;
-  height: 1.1rem;
+.habito-check--feito {
+  background: var(--habito);
+  color: var(--habito-texto);
+}
+
+.habito-check svg,
+.habito-selo svg {
+  width: 1.2rem;
+  height: 1.2rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 2.6;
@@ -1593,9 +1691,10 @@ button.serie-marca {
 
 .habito-progresso {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.8rem;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.75rem;
 }
 
 .pips {
@@ -1616,11 +1715,11 @@ button.serie-marca {
 
 .meta-barra {
   flex: 1;
-  max-width: 9rem;
+  max-width: 8rem;
   height: 0.5rem;
   overflow: hidden;
   border-radius: 999px;
-  background: var(--linha);
+  background: var(--quadro-vazio);
 }
 
 .meta-barra span {
@@ -1639,110 +1738,102 @@ button.serie-marca {
   color: var(--tinta);
 }
 
-.habito-resumo {
-  margin-top: 0.75rem;
-  color: var(--tinta-suave);
-  font-size: 0.875rem;
-}
-
-.botao--habito {
-  margin-top: 0.9rem;
-  background: var(--habito);
-  color: var(--habito-texto);
-}
-
-.habito-hoje {
-  display: flex;
+.habito-selo {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 3.25rem;
-  margin-top: 0.9rem;
+  gap: 0.25rem;
+  padding: 0.25rem 0.65rem 0.25rem 0.45rem;
   border-radius: 999px;
-  background: var(--fundo);
+  background: var(--ouro);
+  color: var(--sobre-ouro);
+  font-size: 0.8125rem;
   font-weight: 700;
 }
 
-.habito-hoje svg {
-  color: var(--habito);
+.habito-selo svg {
+  width: 1rem;
+  height: 1rem;
 }
 
-/* Calendário do mês, semana começando na segunda */
-.calendario {
+.habito-resumo {
+  margin-top: 0.7rem;
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+}
+
+/* Mapa de quadradinhos: colunas são semanas, linhas vão de segunda a domingo */
+.mapa {
+  display: grid;
+  grid-template-columns: auto repeat(var(--semanas), minmax(0, 1fr));
+  gap: 3px;
   margin-top: 0.9rem;
 }
 
-.calendario-semana,
-.calendario-dias {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.2rem;
-}
-
-.calendario-semana {
-  margin-bottom: 0.25rem;
-}
-
-.calendario-semana span {
+.mapa-rotulo {
+  grid-column: 1;
+  align-self: center;
+  padding-right: 0.3rem;
   color: var(--tinta-suave);
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   font-weight: 600;
-  text-align: center;
+  line-height: 1;
 }
 
-.dia {
-  display: grid;
-  place-items: center;
+.mapa-mes {
+  grid-row: 1;
+  overflow: visible;
+  color: var(--tinta-suave);
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Faixa dourada atrás da semana com a meta batida */
+.mapa-ouro {
+  grid-row: 2 / span 7;
+  margin: -2px;
+  border-radius: 6px;
+  background: var(--ouro-fundo);
+  box-shadow: inset 0 0 0 1.5px var(--ouro-borda);
+}
+
+.quadro {
+  position: relative;
   width: 100%;
-  max-width: 2.5rem;
   aspect-ratio: 1;
-  margin-inline: auto;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--tinta-suave);
-  font: inherit;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
+  border-radius: 4px;
+  background: var(--quadro-vazio);
 }
 
-button.dia {
+button.quadro {
   cursor: pointer;
 }
 
-button.dia:active {
-  background: var(--linha);
+.quadro--ouro {
+  background: var(--ouro-vazio);
 }
 
-.dia--feito,
-button.dia--feito:active {
+.quadro--feito {
   background: var(--habito);
-  color: var(--habito-texto);
-  font-weight: 800;
 }
 
-.dia--hoje {
-  box-shadow: inset 0 0 0 2px var(--tinta);
-  color: var(--tinta);
-  font-weight: 800;
+.quadro--hoje {
+  box-shadow: inset 0 0 0 1.5px var(--tinta);
 }
 
-/* Hoje e feito: anel por dentro, na cor do fundo do cartão */
-.dia--hoje.dia--feito {
-  box-shadow: inset 0 0 0 2px var(--habito), inset 0 0 0 4px var(--superficie);
-  color: var(--habito-texto);
+.quadro--hoje.quadro--feito {
+  box-shadow: inset 0 0 0 1.5px var(--habito), inset 0 0 0 3px var(--superficie);
 }
 
-.dia--futuro {
-  opacity: 0.4;
+.quadro--futuro {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--quadro-vazio);
 }
 
-.dia--vazio {
-  visibility: hidden;
-}
-
-.dia--novo {
+.quadro--novo {
   animation: marcar-dia 0.35s cubic-bezier(0.25, 0.9, 0.3, 1.4);
 }
 

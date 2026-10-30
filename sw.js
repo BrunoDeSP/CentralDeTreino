@@ -5,7 +5,7 @@
 // atualização. Sem internet, usa a cópia guardada. Ao criar arquivos novos,
 // adicione-os em ARQUIVOS para já ficarem disponíveis offline.
 
-const CACHE = 'central-de-treino-v3';
+const CACHE = 'central-de-treino-v4';
 
 const ARQUIVOS = [
   './',

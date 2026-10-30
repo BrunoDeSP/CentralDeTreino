@@ -2,7 +2,7 @@
 
 export const CONFIG = {
   diasPorSemana: { min: 1, max: 5, padrao: 3 },
-  semanasPorCiclo: { opcoes: [4, 5, 6], padrao: 4 },
+  semanasPorCiclo: { opcoes: [1, 2, 3, 4, 5], padrao: 4 }, // até 5 semanas, mais ou menos um mês
   // Local usado ao montar o ciclo enquanto não definimos onde ela treina.
   localPadrao: 'academia',
   // Limites do tempo de pausa (em segundos) na tela de Configurações.

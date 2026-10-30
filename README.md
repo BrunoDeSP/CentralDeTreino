@@ -8,14 +8,16 @@ o rastreador de hábitos.
 
 ## O que o app faz
 
-- **Início:** a data, o botão "Começar treino" (ou "Criar ciclo", que monta
-  o ciclo e já abre o primeiro treino) com a barra da semana, e o rastreador
-  de hábitos.
-- **Rastreador de hábitos:** um cartão por hábito com o calendário do mês e
-  o contador da meta (vezes por semana ou por mês, ela escolhe em cada um). Os
-  treinos entram sozinhos como um hábito automático. Dá para marcar dias
-  anteriores tocando no calendário e ver os meses passados.
-- **Ciclo e divisão:** de 1 a 5 dias por semana, por 4 a 6 semanas. Os
+- **Início:** a data, a semana atual com os dias de treino pintados e o
+  contador da meta (ex.: 1/5), o botão "Começar treino" (ou "Criar ciclo",
+  que monta o ciclo e já abre o primeiro treino) e o rastreador de hábitos.
+- **Rastreador de hábitos:** um cartão por hábito com o mapa de
+  quadradinhos das últimas 13 semanas (cada coluna é uma semana, as linhas vão
+  de segunda a domingo) e o contador da meta (vezes por semana ou por mês, ela
+  escolhe em cada um). O check no canto marca o dia de hoje, e tocar num
+  quadradinho marca um dia anterior. Os treinos entram sozinhos como um
+  hábito, com meta própria, separada da programação do ciclo.
+- **Ciclo e divisão:** de 1 a 5 dias por semana, por 1 a 5 semanas. Os
   exercícios ficam fixos durante o ciclo e os treinos andam em fila.
 - **Treino em andamento:** uma série por vez, com carga e repetições já
   preenchidas (ajustáveis no + e − ou digitando) e o botão "Concluir série".
@@ -35,8 +37,9 @@ o rastreador de hábitos.
   sem X nem vermelho.
 - Não existe contagem de dias seguidos: ela zera na primeira falha e
   desanima em hábitos que não são diários. O app só soma o que foi feito.
-- O resumo do mês só mostra conquistas: quantas vezes ela fez e em quantas
-  semanas bateu a meta.
+- As semanas com a meta batida ficam douradas (nas metas por mês, o mês
+  inteiro), e os dias feitos continuam na cor do hábito.
+- O resumo só mostra conquistas: em quantas semanas ou meses ela bateu a meta.
 - Quando a meta é batida, aparece o selo "Meta batida" e um aviso na hora.
 - As semanas começam na segunda-feira.
 
@@ -94,7 +97,7 @@ central-de-treino/
     │   └── comum.js            partes usadas por mais de uma tela
     ├── ui/
     │   ├── componentes.js      anilha, barra, ficha
-    │   ├── calendario.js       cartão de hábito com o calendário do mês
+    │   ├── calendario.js       semana do treino e mapa de quadradinhos dos hábitos
     │   ├── cronometro.js       relógio da pausa, bipe, vibração e tela ligada
     │   ├── avisos.js           aviso com "Desfazer" e confirmação
     │   └── html.js             templates com escape automático
@@ -154,10 +157,10 @@ Por enquanto, no navegador do celular dela (`localStorage`, chave
 tudo: é provisório até ligarmos a planilha. Os dados da versão anterior são
 convertidos sozinhos na primeira abertura.
 
-Formato salvo (versão 3): `ciclos` (com o histórico e as séries de cada
+Formato salvo (versão 4): `ciclos` (com o histórico e as séries de cada
 treino), `progressao` (carga atual, última vez e melhor marca por exercício),
-`habitos` (nome, cor, meta e dias feitos), `configuracoes` e
-`sessaoEmAndamento`.
+`habitos` (nome, cor, meta e dias feitos), `habitoTreinos` (a meta dos
+treinos), `configuracoes` e `sessaoEmAndamento`.
 
 Quando o Google Planilhas entrar, cada parte vira uma aba: **Exercícios**,
 **Modelos**, **Ciclo**, **Sessões**, **Séries**, **Progressão** e **Hábitos**.

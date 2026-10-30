@@ -18,25 +18,6 @@ export function anilha(letra, { tamanho = 'm', estado = 'cheio', nova = false } 
     </span>`;
 }
 
-// A semana como uma barra carregada: anilhas cheias são treinos feitos,
-// a com contorno é o próximo e as vazadas ainda vêm pela fila.
-export function barraDaSemana(resumo, { destaque = null } = {}) {
-  const descricao = `${resumo.feitos} de ${resumo.meta} treinos feitos nesta semana`;
-  return html`
-    <div class="barra" role="img" aria-label="${descricao}">
-      <span class="barra-haste" aria-hidden="true"></span>
-      <span class="barra-anilhas">
-        ${resumo.plano.map((item) =>
-          anilha(item.treinoId, {
-            tamanho: item.status === 'proximo' ? 'g' : 'm',
-            estado: item.status,
-            nova: Boolean(destaque) && item.sessaoId === destaque,
-          }),
-        )}
-      </span>
-    </div>`;
-}
-
 export function barraVazia() {
   return html`<div class="barra barra--vazia" aria-hidden="true"><span class="barra-haste"></span></div>`;
 }
