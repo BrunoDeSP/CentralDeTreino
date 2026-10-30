@@ -2,7 +2,8 @@
    Central de Treino
    Visual: ficha de treino de academia + anilhas olímpicas.
    Cada treino usa a cor de uma anilha (A vermelha, B azul, C amarela,
-   D verde, E branca). O resto da interface fica neutro.
+   D verde, E branca, F preta; I roxa e S azul-petróleo para Inferior e
+   Superior que entram como dia a mais). O resto da interface fica neutro.
    ========================================================================== */
 
 @font-face {
@@ -36,6 +37,8 @@
   --anilha-d: #23824C;  --sobre-d: #FFFFFF;
   --anilha-e: #E4E7EB;  --sobre-e: #18212E;
   --anilha-f: #2F3640;  --sobre-f: #FFFFFF;
+  --anilha-i: #6B46C1;  --sobre-i: #FFFFFF;
+  --anilha-s: #0E7490;  --sobre-s: #FFFFFF;
 
   --fonte: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --raio: 12px;
@@ -68,6 +71,8 @@
 [data-anilha="d"] { --cor: var(--anilha-d); --cor-texto: var(--sobre-d); --anel: rgba(255, 255, 255, 0.4); }
 [data-anilha="e"] { --cor: var(--anilha-e); --cor-texto: var(--sobre-e); --anel: rgba(24, 33, 46, 0.22); --contorno: var(--aco); }
 [data-anilha="f"] { --cor: var(--anilha-f); --cor-texto: var(--sobre-f); --anel: rgba(255, 255, 255, 0.3); }
+[data-anilha="i"] { --cor: var(--anilha-i); --cor-texto: var(--sobre-i); --anel: rgba(255, 255, 255, 0.4); }
+[data-anilha="s"] { --cor: var(--anilha-s); --cor-texto: var(--sobre-s); --anel: rgba(255, 255, 255, 0.4); }
 
 /* --- Base ---------------------------------------------------------------- */
 
@@ -883,6 +888,24 @@ a {
   color: var(--tinta-suave);
   font-size: 0.9375rem;
   text-align: center;
+}
+
+/* Semana do ciclo completa, com o botão "Adicionar treino" */
+.semana-feita {
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.semana-feita strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--tinta);
+  font-size: 1.0625rem;
+}
+
+.semana-feita + .botao {
+  margin-top: 0.75rem;
 }
 
 .faixa--treino {

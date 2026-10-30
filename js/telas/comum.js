@@ -2,10 +2,16 @@ import { html } from '../ui/html.js';
 import { avisar, confirmar } from '../ui/avisos.js';
 import { barraVazia } from '../ui/componentes.js';
 import { cancelarBipe, pararAcompanhamento } from '../ui/cronometro.js';
-import { cicloAtivo, ciclosEncerrados, concluirTreino, desfazerSessao } from '../treino/regras-do-ciclo.js';
-import { iniciarSessao, finalizarSessao, desfazerFinalizacao, progresso } from '../treino/sessao.js';
+import { cicloAtivo, ciclosEncerrados, concluirTreino, desfazerSessao, buscarTreino, nomeDoTreino } from '../treino/regras-do-ciclo.js';
+import { iniciarSessao, finalizarSessao, desfazerFinalizacao, progresso, rotuloDaSessao } from '../treino/sessao.js';
 import { dataCurta } from '../util/datas.js';
-import { plural } from '../util/texto.js';
+import { plural, nomeNaFrase } from '../util/texto.js';
+
+// Nome de um treino do ciclo atual ("Treino A", "Inferior A"...).
+function nomeDe(estado, treinoId) {
+  const ciclo = cicloAtivo(estado);
+  return nomeDoTreino(ciclo ? buscarTreino(ciclo, treinoId) : null, treinoId);
+}
 
 // Marca o treino como feito sem registrar séries (o "Já fiz"), volta para
 // "Hoje" (onde a anilha encaixa na barra) e oferece "Desfazer".
@@ -13,7 +19,7 @@ export async function concluirComAviso(treinoId, ctx) {
   const sessao = await ctx.alterar((estado) => concluirTreino(cicloAtivo(estado), treinoId));
   ctx.ir('#/hoje', { destaque: sessao.id });
 
-  avisar(`Treino ${treinoId} concluído`, {
+  avisar(`${nomeDe(ctx.estado, treinoId)} concluído`, {
     acao: 'Desfazer',
     aoClicar: async () => {
       await ctx.alterar((estado) => {
@@ -30,10 +36,11 @@ export async function concluirComAviso(treinoId, ctx) {
 export async function iniciarOuContinuar(treinoId, ctx) {
   const atual = ctx.estado.sessaoEmAndamento;
   if (atual && atual.treinoId !== treinoId) {
+    const nome = nomeDe(ctx.estado, treinoId);
     const ok = await confirmar({
-      titulo: `Começar o Treino ${treinoId}?`,
-      texto: `O Treino ${atual.treinoId} está em andamento. As séries marcadas nele serão descartadas.`,
-      botao: `Começar treino ${treinoId}`,
+      titulo: `Começar o ${nome}?`,
+      texto: `O ${rotuloDaSessao(atual).nome} está em andamento. As séries marcadas nele serão descartadas.`,
+      botao: `Começar ${nomeNaFrase(nome)}`,
       perigo: true,
     });
     if (!ok) return;
@@ -52,13 +59,13 @@ export async function finalizarComAviso(ctx) {
   cancelarBipe();
   pararAcompanhamento();
   const resultado = await ctx.alterar((estado) => finalizarSessao(estado));
-  const treinoId = resultado.sessao.treinoId;
+  const { nome } = rotuloDaSessao(resultado.sessao);
   const subiram = resultado.mudancas.filter((mudanca) => mudanca.decisao === 'subir').length;
   ctx.ir('#/hoje', { destaque: resultado.registro?.id ?? null });
 
   const texto = subiram
-    ? `Treino ${treinoId} concluído. ${plural(subiram, 'exercício sobe', 'exercícios sobem')} de carga.`
-    : `Treino ${treinoId} concluído`;
+    ? `${nome} concluído. ${plural(subiram, 'exercício sobe', 'exercícios sobem')} de carga.`
+    : `${nome} concluído`;
   avisar(texto, {
     acao: 'Desfazer',
     duracao: 8000,
@@ -73,17 +80,18 @@ export async function finalizarComAviso(ctx) {
 // Botões do card de treino (tela Hoje e página do treino).
 export function botoesDoTreino(treino, estado) {
   const sessao = estado.sessaoEmAndamento;
+  const nome = nomeNaFrase(nomeDoTreino(treino));
   if (sessao?.treinoId === treino.id) {
     const { feitas, total } = progresso(sessao);
     return html`
       <div class="treino-acoes">
-        <a class="botao botao--anilha" href="#/sessao">Continuar treino ${treino.id}</a>
+        <a class="botao botao--anilha" href="#/sessao">Continuar ${nome}</a>
         <p class="treino-acoes-nota">${feitas} de ${total} séries feitas</p>
       </div>`;
   }
   return html`
     <div class="treino-acoes">
-      <button class="botao botao--anilha" type="button" data-acao="iniciar" data-treino="${treino.id}">Iniciar treino ${treino.id}</button>
+      <button class="botao botao--anilha" type="button" data-acao="iniciar" data-treino="${treino.id}">Iniciar ${nome}</button>
       <button class="botao botao--texto" type="button" data-acao="concluir" data-treino="${treino.id}">Já fiz, só marcar como feito</button>
     </div>`;
 }
@@ -93,10 +101,11 @@ export function faixaDeSessao(estado, treinoMostradoId = null) {
   const sessao = estado.sessaoEmAndamento;
   if (!sessao || sessao.treinoId === treinoMostradoId) return '';
   const { feitas, total } = progresso(sessao);
+  const { letra, nome } = rotuloDaSessao(sessao);
   return html`
-    <div class="faixa faixa--treino" data-anilha="${sessao.treinoId.toLowerCase()}">
-      <p><strong>Treino ${sessao.treinoId} em andamento:</strong> ${feitas} de ${total} séries feitas.</p>
-      <a class="botao botao--anilha" href="#/sessao">Continuar treino ${sessao.treinoId}</a>
+    <div class="faixa faixa--treino" data-anilha="${letra.toLowerCase()}">
+      <p><strong>${nome} em andamento:</strong> ${feitas} de ${total} séries feitas.</p>
+      <a class="botao botao--anilha" href="#/sessao">Continuar ${nomeNaFrase(nome)}</a>
     </div>`;
 }
 

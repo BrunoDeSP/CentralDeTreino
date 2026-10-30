@@ -1,5 +1,5 @@
 import { buscarExercicio } from '../dados/exercicios.js';
-import { cicloAtivo, buscarTreino, concluirTreino, desfazerSessao } from './regras-do-ciclo.js';
+import { cicloAtivo, buscarTreino, concluirTreino, desfazerSessao, letraDoTreino, nomeDoTreino } from './regras-do-ciclo.js';
 import { usaCarga, avaliarExercicio, registroDe } from './progressao.js';
 import { hojeISO, diferencaDias } from '../util/datas.js';
 import { tiposDeCardio, buscarCardio, MINUTOS_DE_CARDIO, NIVEL_DE_CARDIO, INTERVALADO } from '../dados/regioes.js';
@@ -11,6 +11,12 @@ export function sessaoAtual(estado) {
   return estado.sessaoEmAndamento ?? null;
 }
 
+// Letra da anilha e nome do treino em andamento (treinos começados antes
+// desta versão só têm o id).
+export function rotuloDaSessao(sessao) {
+  return { letra: sessao.letra ?? sessao.treinoId, nome: sessao.nome ?? `Treino ${sessao.treinoId}` };
+}
+
 export function iniciarSessao(estado, treinoId) {
   const ciclo = cicloAtivo(estado);
   const treino = ciclo ? buscarTreino(ciclo, treinoId) : null;
@@ -19,6 +25,8 @@ export function iniciarSessao(estado, treinoId) {
   estado.sessaoEmAndamento = {
     cicloId: ciclo.id,
     treinoId,
+    letra: letraDoTreino(treino),
+    nome: nomeDoTreino(treino),
     fase: ciclo.fase ?? null,
     data: hojeISO(),
     iniciadaEm: Date.now(),

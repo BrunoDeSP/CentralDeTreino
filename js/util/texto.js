@@ -30,3 +30,9 @@ export function duracao(segundos) {
   if (minutos === 0) return `${resto} s`;
   return resto ? `${minutos} min ${resto} s` : `${minutos} min`;
 }
+
+// Nome do treino no meio da frase: "Treino A" -> "treino A" ("Começar treino A");
+// os outros ficam como estão ("Começar Inferior A").
+export function nomeNaFrase(nome) {
+  return nome.replace(/^Treino /, 'treino ');
+}

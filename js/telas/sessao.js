@@ -26,6 +26,7 @@ import {
   pararIntervalado,
   momentoDoIntervalado,
   intervaladoAtivo,
+  rotuloDaSessao,
 } from '../treino/sessao.js';
 import {
   prepararAudio,
@@ -64,14 +65,15 @@ export function render(_params, { estado }) {
   const ciclo = estado.ciclos.find((c) => c.id === sessao.cicloId) ?? null;
   const treino = ciclo ? buscarTreino(ciclo, sessao.treinoId) : null;
   const cardioPrimeiro = Boolean(treino?.cardio?.primeiro);
+  const { letra, nome } = rotuloDaSessao(sessao);
 
   return html`
-    <div class="sessao" data-anilha="${sessao.treinoId.toLowerCase()}">
+    <div class="sessao" data-anilha="${letra.toLowerCase()}">
       <a class="voltar" href="#/hoje" data-acao="voltar">Voltar</a>
       <header class="sessao-cabeca">
-        ${anilha(sessao.treinoId, { tamanho: 'g' })}
+        ${anilha(letra, { tamanho: 'g' })}
         <div>
-          <h1>Treino ${sessao.treinoId}</h1>
+          <h1>${nome}</h1>
           ${treino?.foco ? html`<p class="treino-foco">${treino.foco}</p>` : ''}
           <p class="sessao-contagem">${total ? `${feitas} de ${total} ${total === 1 ? 'série feita' : 'séries feitas'}` : 'Só cardio hoje'}</p>
         </div>

@@ -1,6 +1,6 @@
-import { montarTreinos } from './gerador.js';
+import { montarTreinos, montarExtra } from './gerador.js';
 import { CONFIG } from '../config.js';
-import { FASES, PROXIMA_FASE, buscarFase } from '../dados/modelos.js';
+import { FASES, PROXIMA_FASE, OPCOES, DIAS_A_MAIS, MAXIMO_DE_TREINOS_NA_SEMANA, buscarFase } from '../dados/modelos.js';
 import { hojeISO, somarDias, diferencaDias } from '../util/datas.js';
 
 // Regras do ciclo de treino.
@@ -9,6 +9,12 @@ import { hojeISO, somarDias, diferencaDias } from '../util/datas.js';
 // Os treinos funcionam como uma fila: o próximo é sempre o seguinte ao último
 // que ela concluiu, sem ficar preso a um dia da semana. As semanas contam a
 // partir do dia em que o ciclo começou (semana 1 = 7 primeiros dias).
+//
+// Dias a mais: quando ela já fez os treinos da semana, o botão "Adicionar
+// treino" acrescenta o próximo de uma ordem fixa (DIAS_A_MAIS, em
+// modelos.js). O treino adicionado fica em ciclo.extras, vale só para aquela
+// semana do ciclo, não mexe na fila e conta na constância como planejado e
+// feito. Se ela adicionar e não fizer, ele some quando a semana vira.
 
 export function novoId(prefixo) {
   return `${prefixo}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
@@ -37,7 +43,8 @@ export function criarCiclo(estado, { diasPorSemana, semanas, fase = 'construcao'
     local,
     treinos: montarTreinos({ diasPorSemana, fase }),
     proximo: 0, // posição do próximo treino na fila
-    sessoes: [], // treinos concluídos: { id, treinoId, data, proximoAntes }
+    sessoes: [], // treinos concluídos: { id, treinoId, data, proximoAntes, extra? }
+    extras: [], // dias a mais: treinos com extra: { semana, posicao, grupo, origem }
   };
 
   estado.ciclos.push(ciclo);
@@ -55,7 +62,21 @@ export function encerrarCiclo(estado, data = hojeISO()) {
 }
 
 export function buscarTreino(ciclo, treinoId) {
-  return ciclo.treinos.find((treino) => treino.id === treinoId) ?? null;
+  return ciclo.treinos.find((treino) => treino.id === treinoId) ?? treinoAdicionado(ciclo, treinoId);
+}
+
+export function treinoAdicionado(ciclo, treinoId) {
+  return (ciclo.extras ?? []).find((treino) => treino.id === treinoId) ?? null;
+}
+
+// Letra da anilha e nome do treino. Os dias a mais têm id próprio, por isso a
+// tela usa estes campos. Ciclos antigos não têm letra nem nome: vale o id.
+export function letraDoTreino(treino, treinoId = treino?.id) {
+  return treino?.letra ?? treinoId;
+}
+
+export function nomeDoTreino(treino, treinoId = treino?.id) {
+  return treino?.nome ?? `Treino ${treinoId}`;
 }
 
 export function proximoTreino(ciclo) {
@@ -63,14 +84,15 @@ export function proximoTreino(ciclo) {
 }
 
 // Registra um treino feito. Se ela fizer um treino fora da ordem, a fila
-// continua a partir dele.
+// continua a partir dele. Um dia a mais não mexe na fila.
 export function concluirTreino(ciclo, treinoId, data = hojeISO()) {
+  const adicionado = treinoAdicionado(ciclo, treinoId);
   const posicao = ciclo.treinos.findIndex((treino) => treino.id === treinoId);
-  if (posicao === -1) throw new Error(`O ${treinoId} não faz parte deste ciclo.`);
+  if (!adicionado && posicao === -1) throw new Error(`O ${treinoId} não faz parte deste ciclo.`);
 
-  const sessao = { id: novoId('sessao'), treinoId, data, proximoAntes: ciclo.proximo };
+  const sessao = { id: novoId('sessao'), treinoId, data, proximoAntes: ciclo.proximo, ...(adicionado ? { extra: true } : {}) };
   ciclo.sessoes.push(sessao);
-  ciclo.proximo = (posicao + 1) % ciclo.treinos.length;
+  if (!adicionado) ciclo.proximo = (posicao + 1) % ciclo.treinos.length;
   return sessao;
 }
 
@@ -98,30 +120,87 @@ export function cicloConcluido(ciclo, data = hojeISO()) {
   return semanaDoCiclo(ciclo, data).numero > ciclo.semanas;
 }
 
-// Como está a semana atual: o que já foi feito e o que vem pela fila até
-// completar a meta de dias.
+// Como está a semana atual do ciclo:
+// - completa: ela já fez os treinos da semana (os dias a mais não contam aqui);
+// - pendente: dia a mais que ela adicionou e ainda não fez;
+// - podeAdicionar / proximoAdicional: o que o botão "Adicionar treino" traz;
+// - cheia: chegou ao 6º treino ou ao fim da ordem; o 7º dia é descanso.
 export function resumoDaSemana(ciclo, data = hojeISO()) {
   const semana = semanaDoCiclo(ciclo, data);
   const feitas = ciclo.sessoes.filter((sessao) => sessao.data >= semana.inicio && sessao.data <= semana.fim);
   const meta = ciclo.diasPorSemana;
+  const doPlano = feitas.filter((sessao) => !sessao.extra).length;
+  const feitosIds = new Set(feitas.map((sessao) => sessao.treinoId));
+  const adicionados = (ciclo.extras ?? []).filter((treino) => treino.extra?.semana === semana.numero);
+  const pendente = adicionados.find((treino) => !feitosIds.has(treino.id)) ?? null;
+  const completa = doPlano >= meta;
+  const cheia = feitas.length >= MAXIMO_DE_TREINOS_NA_SEMANA || adicionados.length >= (DIAS_A_MAIS[meta] ?? []).length;
+  const podeAdicionar = completa && !pendente && !cheia;
 
-  const plano = feitas.map((sessao) => ({ treinoId: sessao.treinoId, status: 'feito', sessaoId: sessao.id }));
-  for (let passo = 0; plano.length < meta; passo++) {
-    const treino = ciclo.treinos[(ciclo.proximo + passo) % ciclo.treinos.length];
-    plano.push({ treinoId: treino.id, status: passo === 0 ? 'proximo' : 'depois' });
-  }
+  return {
+    semana,
+    meta,
+    feitos: feitas.length,
+    doPlano,
+    alemDaMeta: Math.max(0, feitas.length - meta),
+    adicionados,
+    pendente,
+    completa,
+    cheia,
+    podeAdicionar,
+    proximoAdicional: podeAdicionar ? proximoAdicional(ciclo, semana.numero, adicionados) : null,
+  };
+}
 
-  return { semana, feitos: feitas.length, meta, plano, completa: feitas.length >= meta };
+// O próximo treino da ordem dos dias a mais, já montado.
+function proximoAdicional(ciclo, semana, adicionados) {
+  const posicao = adicionados.length;
+  const item = (DIAS_A_MAIS[ciclo.diasPorSemana] ?? [])[posicao];
+  if (!item) return null;
+  const feitos = new Set(ciclo.sessoes.map((sessao) => sessao.treinoId));
+  const vezesDoGrupo = (ciclo.extras ?? []).filter((treino) => treino.extra?.grupo === item.id && feitos.has(treino.id)).length;
+  const intervaladoLivre = !OPCOES[ciclo.diasPorSemana]?.intervalado
+    && !adicionados.some((treino) => treino.cardio?.intervalado && treino.cardio.chave === 'fim');
+  return montarExtra({
+    id: novoId('extra'),
+    diasPorSemana: ciclo.diasPorSemana,
+    fase: ciclo.fase ?? 'construcao',
+    posicao,
+    semana,
+    vezesDoGrupo,
+    intervaladoLivre,
+  });
+}
+
+// Botão "Adicionar treino": põe o próximo da ordem na semana atual.
+export function adicionarTreino(ciclo, data = hojeISO()) {
+  const { podeAdicionar, proximoAdicional: treino } = resumoDaSemana(ciclo, data);
+  if (!podeAdicionar || !treino) throw new Error('Não dá para adicionar treino nesta semana.');
+  ciclo.extras ??= [];
+  ciclo.extras.push(treino);
+  return treino;
+}
+
+// "Desfazer" logo depois de adicionar. Só tira o dia se ele ainda não foi feito.
+export function removerTreinoAdicionado(ciclo, treinoId) {
+  if (!treinoAdicionado(ciclo, treinoId)) return false;
+  if (ciclo.sessoes.some((sessao) => sessao.treinoId === treinoId)) return false;
+  ciclo.extras = ciclo.extras.filter((treino) => treino.id !== treinoId);
+  return true;
 }
 
 // --- Fases e constância --------------------------------------------------------
 
-// Treinos feitos ÷ planejados, contando só as semanas que já passaram.
+// Treinos feitos ÷ planejados, contando só as semanas que já passaram. Cada
+// dia a mais feito conta nos dois: uma semana de 3 dias com 1 a mais dá 4 de 4.
 export function constancia(ciclo, data = hojeISO()) {
   const ate = ciclo.fim ?? data;
-  const semanas = Math.min(ciclo.semanas, semanaDoCiclo(ciclo, ate).numero);
-  const planejados = ciclo.diasPorSemana * Math.max(1, semanas);
-  const feitos = Math.min(ciclo.sessoes.length, planejados);
+  const semanas = Math.max(1, Math.min(ciclo.semanas, semanaDoCiclo(ciclo, ate).numero));
+  const doPlano = ciclo.diasPorSemana * semanas;
+  const aMais = ciclo.sessoes.filter((sessao) => sessao.extra && (treinoAdicionado(ciclo, sessao.treinoId)?.extra?.semana ?? 0) <= semanas).length;
+  const dosTreinos = ciclo.sessoes.filter((sessao) => !sessao.extra).length;
+  const planejados = doPlano + aMais;
+  const feitos = Math.min(dosTreinos, doPlano) + aMais;
   return { feitos, planejados, porcentagem: Math.round((feitos / planejados) * 100) };
 }
 

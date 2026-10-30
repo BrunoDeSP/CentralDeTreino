@@ -4,9 +4,10 @@ import { hojeISO } from './util/datas.js';
 
 // Estado completo do app. Formato salvo (versão 5):
 // {
-//   versao: 4,
+//   versao: 5,
 //   cicloAtivoId: 'ciclo_...' | null,
-//   ciclos: [ { id, status, inicio, fim, diasPorSemana, semanas, fase, local, treinos, proximo, sessoes } ],
+//   ciclos: [ { id, status, inicio, fim, diasPorSemana, semanas, fase, local, treinos, proximo, sessoes, extras } ],
+//            (extras = dias a mais adicionados na semana; sessões deles têm extra: true)
 //   progressao: { [exercicioId]: { carga, decisao, abaixoSeguidas, ultima, recorde } },
 //   progressaoCardio: { fim|core|longo: { sugerido, subiuEm }, intervalado: { tiros } },
 //   habitos: [ { id, nome, cor, meta: { vezes, periodo }, dias, criadoEm } ],
@@ -78,6 +79,8 @@ function migrar(salvo) {
   }
   if (migrado.versao !== VERSAO) return null;
 
+  // Dias a mais na semana: ciclos salvos antes disso começam sem nenhum.
+  migrado.ciclos = migrado.ciclos.map((ciclo) => (Array.isArray(ciclo.extras) ? ciclo : { ...ciclo, extras: [] }));
   migrado.progressao ??= {};
   migrado.progressaoCardio ??= {};
   migrado.habitos ??= [];

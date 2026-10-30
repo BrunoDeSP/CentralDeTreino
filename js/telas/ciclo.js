@@ -11,7 +11,11 @@ import {
   semanaDoCiclo,
   fimPrevisto,
   cicloConcluido,
+  buscarTreino,
+  letraDoTreino,
+  nomeDoTreino,
 } from '../treino/regras-do-ciclo.js';
+import { ordemDosDiasAMais } from '../treino/gerador.js';
 import { dataCurta, dataComDiaDaSemana } from '../util/datas.js';
 import { plural, kg } from '../util/texto.js';
 import { telaSemCiclo } from './comum.js';
@@ -55,6 +59,7 @@ export function render(_params, { estado }) {
             </a>
           </li>`)}
       </ul>
+      ${diasAMais(ciclo)}
     </section>
 
     <section class="secao">
@@ -72,6 +77,16 @@ export function render(_params, { estado }) {
     ${listaDeAnteriores(anteriores)}`;
 }
 
+// A ordem que o botão "Adicionar treino" do Início segue nesta semana.
+function diasAMais(ciclo) {
+  const ordem = ordemDosDiasAMais(ciclo.diasPorSemana);
+  if (ordem.length === 0) {
+    return html`<p class="texto-apoio secao-ajuda">Com 6 dias por semana, o 7º é sempre descanso.</p>`;
+  }
+  const lista = ordem.length === 1 ? ordem[0] : `${ordem.slice(0, -1).join(', ')} e ${ordem.at(-1)}`;
+  return html`<p class="texto-apoio secao-ajuda">Quando os treinos da semana estiverem feitos, o Início oferece dias a mais nesta ordem: ${lista}.</p>`;
+}
+
 function historico(ciclo) {
   if (ciclo.sessoes.length === 0) {
     return html`<p class="texto-apoio">Os treinos que você concluir aparecem aqui.</p>`;
@@ -81,13 +96,14 @@ function historico(ciclo) {
     <ul class="lista">
       ${recentesPrimeiro.map((sessao) => {
         const series = (sessao.series ?? []).reduce((total, item) => total + item.series.length, 0);
+        const treino = buscarTreino(ciclo, sessao.treinoId);
         return html`
           <li class="lista-item lista-item--fixo">
-            ${anilha(sessao.treinoId, { tamanho: 'p' })}
+            ${anilha(letraDoTreino(treino, sessao.treinoId), { tamanho: 'p' })}
             <span class="lista-texto">
-              <span class="lista-titulo">Treino ${sessao.treinoId}</span>
+              <span class="lista-titulo">${nomeDoTreino(treino, sessao.treinoId)}</span>
               <span class="lista-sub">
-                ${dataComDiaDaSemana(sessao.data)}${series ? `, ${plural(series, 'série registrada', 'séries registradas')}` : ''}
+                ${dataComDiaDaSemana(sessao.data)}${series ? `, ${plural(series, 'série registrada', 'séries registradas')}` : ''}${sessao.extra ? ', dia a mais' : ''}
               </span>
             </span>
           </li>`;

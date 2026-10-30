@@ -61,6 +61,38 @@ export const OPCOES = {
   6: { divisao: 'dividido', sequencia: ['A', 'B', 'E', 'C', 'D', 'F'], tempo: '1h', cardio: [20, 25], intervalado: 'D', nome: '5 dias + cardio longo', descricao: 'Só com folga na rotina, e sempre com 1 dia de descanso.' },
 };
 
+// Dias a mais na semana. Depois que ela faz os treinos da semana, o botão
+// "Adicionar treino" do Início traz o próximo desta ordem, conforme os dias do
+// ciclo. Com 1 ou 2 dias, entra o C e depois o A e o B de novo; com 3, um
+// Inferior e depois um Superior (A e B se alternam a cada vez que ela
+// adiciona). O 6º treino da semana é sempre o Cardio longo, e o 7º dia é
+// descanso. O treino adicionado vale só para aquela semana.
+const inteiro = (id) => ({ divisao: 'inteiro', id });
+const dividido = (id) => ({ divisao: 'dividido', id });
+
+export const DIAS_A_MAIS = {
+  1: [inteiro('B'), inteiro('C'), inteiro('A'), inteiro('B'), dividido('F')],
+  2: [inteiro('C'), inteiro('A'), inteiro('B'), dividido('F')],
+  3: [dividido('inferior'), dividido('superior'), dividido('F')],
+  4: [dividido('E'), dividido('F')],
+  5: [dividido('F')],
+  6: [],
+};
+
+export const MAXIMO_DE_TREINOS_NA_SEMANA = 6;
+
+// Inferior e Superior que entram como dia a mais numa semana de corpo inteiro
+// (versão de 4 dias). Ganham nome próprio e as anilhas I e S, para não se
+// confundirem com os treinos A, B e C de corpo inteiro.
+export const GRUPOS_A_MAIS = { inferior: ['A', 'C'], superior: ['B', 'D'] };
+
+export const DIVIDIDO_A_MAIS = {
+  A: { letra: 'I', nome: 'Inferior A', foco: 'Pernas e glúteo' },
+  B: { letra: 'S', nome: 'Superior A', foco: 'Costas, peito e braço' },
+  C: { letra: 'I', nome: 'Inferior B', foco: 'Posterior e glúteo' },
+  D: { letra: 'S', nome: 'Superior B', foco: 'Costas, peito e ombro' },
+};
+
 // Dias só de cardio (5 e 6 dias).
 export const DIAS_DE_CARDIO = {
   E: { chave: 'core', minutos: [40, 45], primeiro: true, como: 'Alterne bike e elíptico, começando pela bike. Depois, o core.' },

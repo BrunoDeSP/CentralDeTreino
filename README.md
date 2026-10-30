@@ -11,7 +11,8 @@ o rastreador de hábitos.
 - **Início:** a data, a semana atual com os dias de treino pintados e o
   contador da meta (ex.: 2/3), o botão "Começar treino" (ou "Criar ciclo",
   que monta o ciclo e já abre o primeiro treino) e os hábitos com o
-  calendário do mês.
+  calendário do mês. Quando os treinos da semana do ciclo estão feitos, o
+  botão vira "Adicionar treino" (ver Dias a mais, abaixo).
 - **Configurações:** abertas pela engrenagem no canto do Início.
 - **Rastreador de hábitos (Início):** um cartão por hábito com o calendário
   do mês, troca de mês e o contador da meta (vezes por semana ou por mês, ela
@@ -20,7 +21,7 @@ o rastreador de hábitos.
   hábito, com meta própria, separada da programação do ciclo.
 - **Ciclo e divisão:** ela escolhe a fase do plano, de 1 a 6 dias por semana
   e de 1 a 5 semanas. Os exercícios ficam fixos durante o ciclo e os treinos
-  andam em fila.
+  andam em fila. A tela Ciclo mostra também a ordem dos dias a mais.
 - **Treino em andamento:** uma série por vez, com carga e repetições já
   preenchidas (ajustáveis no + e − ou digitando) e o botão "Concluir série".
   Tudo é salvo a cada toque: fechar o app no meio não perde nada.
@@ -69,13 +70,35 @@ O plano do PDF "Treino para emagrecimento" está em `js/dados/`:
   5 dias = os 4 + Cardio + core (E) no meio; 6 dias = os 5 + Cardio longo (F).
   Com 4 dias, os isolados têm 2 séries; com 5 ou 6, a última linha de cada
   treino sai e o core vai para o dia E.
+- **Dias a mais na semana** (`DIAS_A_MAIS` em `modelos.js`): depois que ela
+  faz os treinos da semana do ciclo, o botão "Adicionar treino" traz o
+  próximo de uma ordem fixa, sem ela escolher nada:
+
+  | Dias do ciclo | Dias a mais, na ordem                      |
+  | ------------- | ------------------------------------------ |
+  | 1             | B, C, A, B e Cardio longo                  |
+  | 2             | C, A, B e Cardio longo                     |
+  | 3             | Inferior, Superior e Cardio longo          |
+  | 4             | Cardio + core e Cardio longo               |
+  | 5             | Cardio longo                               |
+  | 6             | nenhum: o 7º dia é descanso                |
+
+  O treino adicionado vale só para aquela semana do ciclo e não mexe na fila.
+  Ele usa o aquecimento e o cardio do novo total de dias, como se ela tivesse
+  escolhido esse número desde o começo. Com 3 dias, o Inferior e o Superior
+  usam a versão de 4 dias, alternam A e B a cada vez que ela faz um, e têm
+  anilhas próprias (I roxa e S azul-petróleo). Um por vez: o próximo só
+  aparece depois que ela fizer o anterior. Se ela adicionar e não fizer, ele
+  some quando a semana vira. O botão para no 6º treino da semana. A ordem
+  vale mesmo em dias seguidos.
 - **Tempo por treino:** cerca de 1h30 com 1 ou 2 dias, 1h20 com 3, 1h10 com 4
   e 1h com 5 ou 6. O aquecimento é de 10 min até 3 dias e de 5 min depois.
 - **Fases** (escolhidas ao montar o ciclo): Adaptação (2 séries, 3 repetições
   sobrando), Construção (séries do plano), Consolidação (+1 série nos dois
   primeiros compostos de cada treino, até 4) e Semana leve (metade das séries,
   mesmas cargas). O app sugere a fase pela regra do PDF: com 80% ou mais dos
-  treinos feitos no ciclo anterior, a próxima; abaixo disso, repetir por 2
+  treinos feitos no ciclo anterior (cada dia a mais feito conta como
+  planejado e feito), a próxima; abaixo disso, repetir por 2
   semanas; mais de 2 semanas parada, 2 semanas de Adaptação. Depois da semana
   leve, a sugestão volta para a Construção.
 - **Cardio** (`regioes.js`): bike, bike horizontal e elíptico no fim do treino;
@@ -178,8 +201,9 @@ e abra `http://localhost:8000`.
 - **Primeira vez:** envie os arquivos mantendo as pastas, com o `index.html`
   na raiz. Em **Settings → Pages**, escolha **Deploy from a branch**, branch
   `main`, pasta `/ (root)`.
-- **Atualizações:** cada entrega vem num zip só com os arquivos alterados, já
-  nas pastas certas. Extraia por cima do projeto e envie esses arquivos.
+- **Atualizações:** cada entrega vem num zip completo, já nas pastas certas,
+  com a lista dos arquivos alterados na conversa. Extraia por cima do projeto
+  e envie os arquivos.
 - Se o celular ainda mostrar a versão antiga depois de publicar, feche e abra
   o app de novo.
 
@@ -197,6 +221,7 @@ e abra `http://localhost:8000`.
 | ---------------------------------------------------- | -------------------------- |
 | Exercícios, alternativas, dicas e status             | `js/dados/exercicios.js`   |
 | Treinos por dias, fases, séries e minutos de cardio  | `js/dados/modelos.js`      |
+| Ordem dos dias a mais na semana                      | `js/dados/modelos.js`      |
 | Aparelhos de cardio, passo a passo e intervalado     | `js/dados/regioes.js`      |
 | Regras da progressão                                 | `js/treino/progressao.js`  |
 | Cores e sugestões de hábitos                         | `js/habitos/regras-dos-habitos.js` |
@@ -213,8 +238,9 @@ Por enquanto, no navegador do celular dela (`localStorage`, chave
 tudo: é provisório até ligarmos a planilha. Os dados da versão anterior são
 convertidos sozinhos na primeira abertura.
 
-Formato salvo (versão 4): `ciclos` (com o histórico e as séries de cada
-treino), `progressao` (carga atual, última vez e melhor marca por exercício),
+Formato salvo (versão 5): `ciclos` (com o histórico e as séries de cada
+treino, e em `extras` os dias a mais adicionados em cada semana),
+`progressao` (carga atual, última vez e melhor marca por exercício),
 `habitos` (nome, cor, meta e dias feitos), `habitoTreinos` (a meta dos
 treinos), `configuracoes` e `sessaoEmAndamento`.
 

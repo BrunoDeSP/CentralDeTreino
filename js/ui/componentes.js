@@ -4,7 +4,9 @@ import { usaCarga } from '../treino/progressao.js';
 import { kg, duracao } from '../util/texto.js';
 
 // Cada treino tem a cor de uma anilha olímpica: A vermelha, B azul,
-// C amarela, D verde, E branca. A cor acompanha o treino no app inteiro.
+// C amarela, D verde, E branca, F preta. Inferior e Superior que entram como
+// dia a mais numa semana de corpo inteiro usam as anilhas I (roxa) e S
+// (azul-petróleo). A cor acompanha o treino no app inteiro.
 
 // Anilha com a letra do treino.
 // tamanho: 'p' | 'm' | 'g' | 'xg'
@@ -29,7 +31,7 @@ export function cabecalhoDoTreino(treino, nivelTitulo = 'h2') {
     : html`<h2 class="treino-nome">${treino.nome}</h2>`;
   return html`
     <header class="treino-cabeca">
-      ${anilha(treino.id, { tamanho: 'xg' })}
+      ${anilha(treino.letra ?? treino.id, { tamanho: 'xg' })}
       <div>
         ${titulo}
         <p class="treino-foco">${treino.foco}</p>

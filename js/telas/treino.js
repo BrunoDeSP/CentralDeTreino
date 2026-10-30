@@ -4,6 +4,7 @@ import { cicloAtivo, buscarTreino, proximoTreino } from '../treino/regras-do-cic
 import { concluirComAviso, iniciarOuContinuar, botoesDoTreino, faixaDeSessao } from './comum.js';
 
 // Ficha de qualquer treino do ciclo (aberta pela lista na tela Ciclo).
+// Um dia a mais não mexe na fila, por isso não leva o aviso da fila.
 
 export const titulo = 'Treino';
 
@@ -28,7 +29,7 @@ export function render([treinoId], { estado }) {
       ${cabecalhoDoTreino(treino, 'h1')}
       ${ficha(treino, estado.progressao)}
       ${detalhesDoTreino(treino, estado.configuracoes)}
-      ${proximo.id === treino.id
+      ${proximo.id === treino.id || treino.extra
         ? ''
         : html`<p class="nota">O próximo da fila é o ${proximo.nome}. Se você fizer este agora, a fila continua a partir dele.</p>`}
       ${botoesDoTreino(treino, estado)}
