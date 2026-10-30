@@ -35,6 +35,7 @@
   --anilha-c: #F2B33D;  --sobre-c: #18212E;
   --anilha-d: #23824C;  --sobre-d: #FFFFFF;
   --anilha-e: #E4E7EB;  --sobre-e: #18212E;
+  --anilha-f: #2F3640;  --sobre-f: #FFFFFF;
 
   --fonte: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --raio: 12px;
@@ -57,6 +58,7 @@
     --perigo: #F97066;
     --sobre-perigo: #1C2129;
     --anilha-e: #D9DDE3;
+    --anilha-f: #4B5563;
   }
 }
 
@@ -65,6 +67,7 @@
 [data-anilha="c"] { --cor: var(--anilha-c); --cor-texto: var(--sobre-c); --anel: rgba(24, 33, 46, 0.22); }
 [data-anilha="d"] { --cor: var(--anilha-d); --cor-texto: var(--sobre-d); --anel: rgba(255, 255, 255, 0.4); }
 [data-anilha="e"] { --cor: var(--anilha-e); --cor-texto: var(--sobre-e); --anel: rgba(24, 33, 46, 0.22); --contorno: var(--aco); }
+[data-anilha="f"] { --cor: var(--anilha-f); --cor-texto: var(--sobre-f); --anel: rgba(255, 255, 255, 0.3); }
 
 /* --- Base ---------------------------------------------------------------- */
 
@@ -2343,6 +2346,265 @@ button.dia--feito:active {
   color: var(--tinta-suave);
   font-size: 0.8125rem;
   font-weight: 500;
+}
+
+
+/* --- Plano oficial: lembretes, dica, troca, joelho e intervalado ---------- */
+
+.orientacoes {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0 0.25rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.orientacoes p,
+.fase-sugestao p,
+.joelho-aviso p {
+  margin: 0;
+}
+
+.exercicio-dica,
+.exercicio-troca {
+  margin: 0.5rem 0 0;
+  padding: 0 1rem 0 3.5rem;
+  color: var(--tinta-suave);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.exercicio-troca {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.exercicio-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding: 0 1rem 0 3.5rem;
+}
+
+.exercicio-acao {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fundo);
+  box-shadow: inset 0 0 0 1.5px var(--linha-forte);
+  color: var(--tinta);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.exercicio-acao--joelho {
+  box-shadow: inset 0 0 0 1.5px var(--perigo);
+  color: var(--perigo);
+}
+
+.exercicio-acao:focus-visible {
+  outline: 3px solid var(--tinta);
+  outline-offset: 2px;
+}
+
+.joelho-aviso {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.7rem 1rem 0 3.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--perigo);
+  border-radius: 4px var(--raio) var(--raio) 4px;
+  background: var(--fundo);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.joelho-aviso .botao--texto {
+  justify-self: start;
+  margin: 0;
+}
+
+.cardio-nota,
+.cardio-sinais {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.cardio-sinais {
+  color: var(--tinta-suave);
+  font-size: 0.8125rem;
+}
+
+.cardio-como {
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1px var(--linha);
+}
+
+.cardio-como summary {
+  padding: 0.7rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cardio-como dl {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0 1rem 0.9rem;
+}
+
+.cardio-como dt {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+
+.cardio-como dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.cardio-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.cardio-campos .passo--cardio {
+  max-width: none;
+}
+
+.intervalado {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1.5px var(--anilha-b);
+}
+
+.intervalado p {
+  margin: 0;
+}
+
+.intervalado-titulo {
+  font-weight: 700;
+}
+
+.intervalado-texto {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.intervalado .botao--secundario {
+  margin-top: 0.25rem;
+}
+
+.intervalado--rodando {
+  justify-items: center;
+  text-align: center;
+  box-shadow: none;
+  background: var(--anilha-b);
+  color: var(--sobre-b);
+}
+
+.intervalado--rodando[data-fase="forte"] {
+  background: var(--anilha-a);
+  color: var(--sobre-a);
+}
+
+.intervalado--rodando[data-fase="fim"] {
+  background: var(--anilha-d);
+  color: var(--sobre-d);
+}
+
+.intervalado-fase {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.intervalado-relogio {
+  font-size: 3rem;
+  font-weight: 800;
+  font-stretch: 75%;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.intervalado--rodando .botao--texto {
+  color: inherit;
+}
+
+/* --- Novo ciclo: fases ---------------------------------------------------- */
+
+.fases {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.fase-opcao {
+  position: relative;
+}
+
+.fase-opcao input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.fase-opcao span {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--raio);
+  background: var(--superficie);
+  box-shadow: inset 0 0 0 1.5px var(--linha-forte);
+}
+
+.fase-opcao small {
+  color: var(--tinta-suave);
+  font-size: 0.875rem;
+}
+
+.fase-opcao input:checked + span {
+  box-shadow: inset 0 0 0 2.5px var(--tinta);
+}
+
+.fase-opcao input:focus-visible + span {
+  outline: 3px solid var(--tinta);
+  outline-offset: 2px;
+}
+
+.fase-sugerida {
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--anilha-d);
+  color: var(--sobre-d);
+  font-size: 0.75rem;
+  font-style: normal;
+  font-weight: 700;
+  vertical-align: 0.1em;
+}
+
+.fase-sugestao {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
 }
 
 /* --- Telas maiores ------------------------------------------------------- */

@@ -25,6 +25,11 @@ const INTERRUPTORES = [
     titulo: 'Manter a tela ligada no treino',
     ajuda: 'Evita que o celular bloqueie no meio da pausa.',
   },
+  {
+    nome: 'checkupFeito',
+    titulo: 'Check-up médico feito',
+    ajuda: 'Libera o intervalado no cardio. O plano pede o check-up antes do esforço forte.',
+  },
 ];
 
 export function render(_params, { estado }) {

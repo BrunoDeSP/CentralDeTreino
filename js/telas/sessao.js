@@ -1,9 +1,11 @@
 import { html, cru } from '../ui/html.js';
 import { anilha } from '../ui/componentes.js';
 import { avisar, confirmar } from '../ui/avisos.js';
-import { buscarExercicio } from '../dados/exercicios.js';
+import { buscarExercicio, ehDePerna } from '../dados/exercicios.js';
 import { lerEstado } from '../estado.js';
-import { usaCarga, registroDe, descreverSeries, LIMITE_SEM_EVOLUIR } from '../treino/progressao.js';
+import { usaCarga, registroDe, descreverSeries } from '../treino/progressao.js';
+import { buscarTreino } from '../treino/regras-do-ciclo.js';
+import { buscarFase } from '../dados/modelos.js';
 import {
   sessaoAtual,
   serieAtual,
@@ -17,6 +19,13 @@ import {
   pausaAtiva,
   cancelarSessao,
   definirCardio,
+  trocarExercicio,
+  encerrarPorJoelho,
+  retomarExercicio,
+  iniciarIntervalado,
+  pararIntervalado,
+  momentoDoIntervalado,
+  intervaladoAtivo,
 } from '../treino/sessao.js';
 import {
   prepararAudio,
@@ -27,9 +36,9 @@ import {
   pararAcompanhamento,
   manterTelaLigada,
 } from '../ui/cronometro.js';
-import { kg, numero, tempo } from '../util/texto.js';
+import { kg, numero, tempo, plural } from '../util/texto.js';
 import { finalizarComAviso } from './comum.js';
-import { TIPOS_DE_CARDIO, MINUTOS_DE_CARDIO } from '../dados/regioes.js';
+import { tiposDeCardio, buscarCardio, MINUTOS_DE_CARDIO, NIVEL_DE_CARDIO, INTERVALADO, SINAIS_PARA_PARAR } from '../dados/regioes.js';
 
 // Treino em andamento: uma série por vez, com a carga sugerida, o registro do
 // que ela fez e o cronômetro de pausa. Tudo é salvo a cada toque.
@@ -52,6 +61,9 @@ export function render(_params, { estado }) {
   const { feitas, total } = progresso(sessao);
   const atual = serieAtual(sessao);
   const porcentagem = total ? Math.round((feitas / total) * 100) : 0;
+  const ciclo = estado.ciclos.find((c) => c.id === sessao.cicloId) ?? null;
+  const treino = ciclo ? buscarTreino(ciclo, sessao.treinoId) : null;
+  const cardioPrimeiro = Boolean(treino?.cardio?.primeiro);
 
   return html`
     <div class="sessao" data-anilha="${sessao.treinoId.toLowerCase()}">
@@ -60,16 +72,21 @@ export function render(_params, { estado }) {
         ${anilha(sessao.treinoId, { tamanho: 'g' })}
         <div>
           <h1>Treino ${sessao.treinoId}</h1>
-          <p class="sessao-contagem">${feitas} de ${total} ${total === 1 ? 'série feita' : 'séries feitas'}</p>
+          ${treino?.foco ? html`<p class="treino-foco">${treino.foco}</p>` : ''}
+          <p class="sessao-contagem">${total ? `${feitas} de ${total} ${total === 1 ? 'série feita' : 'séries feitas'}` : 'Só cardio hoje'}</p>
         </div>
       </header>
       <div class="sessao-progresso" role="progressbar" aria-label="Séries feitas" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${feitas}">
         <span style="width: ${porcentagem}%"></span>
       </div>
 
+      ${orientacoes(sessao, treino, ciclo)}
+
+      ${sessao.cardio && cardioPrimeiro ? cartaoDeCardio(sessao, atual, true) : ''}
+
       ${sessao.circuito ? porVolta(sessao, atual, estado) : porExercicio(sessao, atual, estado)}
 
-      ${sessao.cardio ? cartaoDeCardio(sessao, atual) : ''}
+      ${sessao.cardio && !cardioPrimeiro ? cartaoDeCardio(sessao, atual, false) : ''}
 
       <div class="sessao-fim" id="fim-do-treino">
         <button class="botao botao--anilha" type="button" data-acao="finalizar" data-foco="finalizar">Finalizar treino</button>
@@ -95,6 +112,7 @@ function porExercicio(sessao, atual, estado) {
           </div>
         </header>
         ${infoDeCarga(exercicio, registroDe(estado, item.exercicioId))}
+        ${apoioDoExercicio(item, exercicio, i, terminado)}
         <ol class="series">
           ${item.series.map((_, s) =>
             ehAtual && atual[1] === s
@@ -223,60 +241,220 @@ function infoDeCarga(exercicio, registro, naSerie = false) {
   if (registro?.decisao === 'dificultar') {
     linhas.push(html`<p class="nota nota--compacta">Na última vez você bateu o topo da meta. Dá para tentar uma variação mais difícil.</p>`);
   }
-  if ((registro?.semEvoluir ?? 0) >= LIMITE_SEM_EVOLUIR) {
-    const dica = usaCarga(exercicio) ? 'Vale baixar um pouco a carga ou trocar o exercício.' : 'Vale trocar por uma variação do exercício.';
-    linhas.push(html`<p class="nota nota--atencao nota--compacta">${registro.semEvoluir} treinos seguidos sem evoluir. ${dica}</p>`);
-  }
+  const aviso = avisoDaProgressao(registro);
+  if (aviso) linhas.push(aviso);
   return html`<div class="exercicio-info ${naSerie ? 'exercicio-info--na-serie' : ''}">${linhas}</div>`;
 }
 
-// Cardio no fim do treino: tipo e minutos. É opcional e não conta nas séries.
-function cartaoDeCardio(sessao, atual) {
-  const { tipo, minutos, meta, feito } = sessao.cardio;
-  const nomeDoTipo = TIPOS_DE_CARDIO.find((opcao) => opcao.id === tipo)?.nome ?? 'Cardio';
+// Lembretes do plano no topo do treino: aquecimento e carga certa da fase.
+function orientacoes(sessao, treino, ciclo) {
+  if (!treino) return '';
+  const fase = ciclo?.fase ? buscarFase(ciclo.fase) : null;
+  const linhas = [];
+  if (treino.aquecimento) {
+    linhas.push(html`<p><strong>Aquecimento (${treino.aquecimento} min):</strong> bike leve, mobilidade de quadril e tornozelo e uma série leve do primeiro exercício.</p>`);
+  }
+  if (fase && sessao.itens.length) {
+    linhas.push(html`<p><strong>${fase.nome}:</strong> a última repetição sai com ${fase.sobrando} sobrando (esforço ${10 - fase.sobrando} de 10).${fase.id === 'leve' ? ' Mesmas cargas, metade das séries.' : ''}</p>`);
+  }
+  return linhas.length ? html`<div class="orientacoes">${linhas}</div>` : '';
+}
+
+// Dica de execução, troca pela alternativa e o botão do joelho.
+function apoioDoExercicio(item, exercicio, i, terminado) {
+  const base = buscarExercicio(item.base ?? item.exercicioId);
+  const trocado = Boolean(item.base) && item.exercicioId !== item.base;
+  const alternativa = trocado ? base : buscarExercicio(exercicio?.alternativa);
+  const comecou = item.series.some((serie) => serie.feita);
+  const partes = [];
+  if (trocado) partes.push(html`<p class="exercicio-troca">No lugar de ${base?.nome}, que estava ocupado.</p>`);
+  if (exercicio?.dica) partes.push(html`<p class="exercicio-dica">${exercicio.dica}</p>`);
+  if (item.joelho) {
+    partes.push(html`
+      <div class="joelho-aviso" role="status">
+        <p><strong>Encerrado hoje: o joelho incomodou.</strong> No próximo treino este exercício volta com uns 15% menos carga; se precisar, diminua a amplitude. Se a dor passar de 5 de 10 ou piorar de uma semana para outra, pare os exercícios de perna e procure um fisioterapeuta ou ortopedista.</p>
+        <button class="botao botao--texto" type="button" data-acao="retomar" data-item="${i}">Desfazer</button>
+      </div>`);
+  }
+  const botoes = [];
+  if (alternativa && !comecou && !item.joelho) {
+    botoes.push(html`<button class="exercicio-acao" type="button" data-acao="trocar" data-item="${i}">${trocado ? `Voltar para ${base?.nome}` : `Aparelho ocupado? Trocar por ${alternativa.nome}`}</button>`);
+  }
+  if (ehDePerna(exercicio) && !item.joelho && !terminado) {
+    botoes.push(html`<button class="exercicio-acao exercicio-acao--joelho" type="button" data-acao="joelho" data-item="${i}">Joelho incomodou</button>`);
+  }
+  if (botoes.length) partes.push(html`<div class="exercicio-acoes">${botoes}</div>`);
+  return partes;
+}
+
+function avisoDaProgressao(registro) {
+  if (registro?.decisao === 'baixar') {
+    return html`<p class="nota nota--atencao nota--compacta">A carga baixou uns 10%: foram 3 treinos seguidos abaixo da meta.</p>`;
+  }
+  if (registro?.decisao === 'joelho') {
+    return html`<p class="nota nota--atencao nota--compacta">Voltou com uns 15% menos carga porque o joelho incomodou. Se precisar, diminua a amplitude.</p>`;
+  }
+  if (registro?.decisao === 'segurar' && registro.abaixoSeguidas > 0) {
+    return html`<p class="nota nota--compacta">Carga mantida: ${plural(registro.abaixoSeguidas, 'treino')} abaixo da meta. Na 3ª vez seguida, ela baixa uns 10%.</p>`;
+  }
+  return null;
+}
+
+// Cardio: aparelho, como fazer nele, minutos sugeridos, nível (opcional) e,
+// nos dias de intervalado, o cronômetro dos tiros.
+function cartaoDeCardio(sessao, atual, primeiro) {
+  const cardio = sessao.cardio;
+  const { minutos, sugerido, meta, feito } = cardio;
+  const tipoAtual = buscarCardio(cardio.tipo);
+  const opcoes = tiposDeCardio(cardio.chave ?? 'fim');
   const [minimo, maximo] = meta.minutos;
-  const daVez = !feito && !atual;
+  const daVez = !feito && (primeiro || !atual);
+  const titulo = cardio.chave === 'longo' ? 'Cardio longo' : primeiro ? 'Cardio' : 'Cardio no final';
   return html`
     <section class="exercicio exercicio--cardio ${daVez ? 'exercicio--atual' : ''} ${feito ? 'exercicio--feito' : ''}" ${feito ? '' : cru('id="cardio-atual"')}>
       <header class="exercicio-cabeca">
-        <span class="exercicio-numero">${feito ? ICONE_FEITO : sessao.itens.length + 1}</span>
+        <span class="exercicio-numero">${feito ? ICONE_FEITO : primeiro ? 1 : sessao.itens.length + 1}</span>
         <div>
-          <h2 class="exercicio-nome">Cardio no final</h2>
-          <p class="exercicio-alvo">Meta: ${minimo} a ${maximo} minutos, ritmo ${meta.ritmo}</p>
+          <h2 class="exercicio-nome">${titulo}</h2>
+          <p class="exercicio-alvo">Meta de hoje: ${sugerido ?? minimo} min em ritmo ${meta.ritmo} (faixa de ${minimo} a ${maximo})</p>
         </div>
       </header>
       ${feito
         ? html`
           <ol class="series">
             <li class="serie serie--feita serie--nomeada">
-              <span class="serie-rotulo">${nomeDoTipo}</span>
-              <span class="serie-valores">${minutos} min</span>
+              <span class="serie-rotulo">${tipoAtual?.nome ?? 'Cardio'}</span>
+              <span class="serie-valores">${resumoDoCardio(cardio)}</span>
               <button class="serie-marca" type="button" data-acao="cardio-concluir" data-foco="cardio-marca" aria-pressed="true" aria-label="Cardio feito. Toque para desmarcar.">${ICONE_FEITO}</button>
             </li>
           </ol>`
         : html`
           <div class="cardio">
+            ${meta.como ? html`<p class="cardio-nota">${meta.como}</p>` : ''}
             <fieldset class="cardio-tipos">
-              <legend class="passo-rotulo">Tipo</legend>
+              <legend class="passo-rotulo">Aparelho</legend>
               <div class="chips">
-                ${TIPOS_DE_CARDIO.map((opcao) => html`
+                ${opcoes.map((opcao) => html`
                   <label class="chip">
-                    <input type="radio" name="cardio-tipo" value="${opcao.id}" ${opcao.id === tipo ? cru('checked') : ''}>
+                    <input type="radio" name="cardio-tipo" value="${opcao.id}" ${opcao.id === cardio.tipo ? cru('checked') : ''}>
                     <span>${opcao.nome}</span>
                   </label>`)}
               </div>
             </fieldset>
-            <div class="passo passo--cardio">
-              <label class="passo-rotulo" for="cardio-minutos">Minutos</label>
-              <div class="passo-controle">
-                <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-delta="-1" data-foco="cardio-menos" aria-label="Menos minutos">−</button>
-                <input class="passo-valor" id="cardio-minutos" name="cardio-minutos" type="number" inputmode="numeric" min="${MINUTOS_DE_CARDIO.min}" max="${MINUTOS_DE_CARDIO.max}" step="1" value="${minutos}">
-                <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-delta="1" data-foco="cardio-mais" aria-label="Mais minutos">+</button>
-              </div>
+            ${comoFazer(tipoAtual)}
+            ${intervaladoAtivo(cardio) ? blocoIntervalado(cardio) : ''}
+            ${cardio.semCheckup
+              ? html`<p class="nota nota--compacta">Hoje seria dia de intervalado. Ele entra depois do check-up médico: marque em <a href="#/configuracoes">Configurações</a> quando fizer.</p>`
+              : ''}
+            <div class="cardio-campos">
+              ${campoDoCardio('minutos', 'Minutos', minutos, MINUTOS_DE_CARDIO, 'Menos minutos', 'Mais minutos')}
+              ${campoDoCardio('nivel', 'Nível (opcional)', cardio.nivel ?? '', NIVEL_DE_CARDIO, 'Nível menor', 'Nível maior')}
             </div>
+            <p class="cardio-sinais">${SINAIS_PARA_PARAR}</p>
             <button class="botao botao--anilha" type="button" data-acao="cardio-concluir" data-foco="cardio-concluir">Concluir cardio</button>
           </div>`}
     </section>`;
+}
+
+function resumoDoCardio(cardio) {
+  const partes = [`${cardio.minutos} min`];
+  if (Number.isFinite(cardio.nivel)) partes.push(`nível ${cardio.nivel}`);
+  if (intervaladoAtivo(cardio)) partes.push(plural(cardio.tiros, 'tiro'));
+  return partes.join(', ');
+}
+
+function comoFazer(tipo) {
+  if (!tipo?.dicas?.length) return '';
+  return html`
+    <details class="cardio-como" open>
+      <summary>Como fazer: ${tipo.nome}</summary>
+      <dl>
+        ${tipo.dicas.map(([titulo, texto]) => html`<div><dt>${titulo}</dt><dd>${texto}</dd></div>`)}
+      </dl>
+    </details>`;
+}
+
+function campoDoCardio(nome, rotulo, valor, limites, menos, mais) {
+  const id = `cardio-${nome}`;
+  return html`
+    <div class="passo passo--cardio">
+      <label class="passo-rotulo" for="${id}">${rotulo}</label>
+      <div class="passo-controle">
+        <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-campo="${nome}" data-delta="-1" data-foco="${id}-menos" aria-label="${menos}">−</button>
+        <input class="passo-valor" id="${id}" name="${id}" type="number" inputmode="numeric" min="${limites.min}" max="${limites.max}" step="1" value="${valor}">
+        <button class="passo-botao" type="button" data-acao="cardio-ajustar" data-campo="${nome}" data-delta="1" data-foco="${id}-mais" aria-label="${mais}">+</button>
+      </div>
+    </div>`;
+}
+
+function blocoIntervalado(cardio) {
+  const { forte, leve } = INTERVALADO;
+  if (!cardio.timer) {
+    const duracao = Math.round((cardio.tiros * (forte + leve)) / 60);
+    return html`
+      <div class="intervalado">
+        <p class="intervalado-titulo">Hoje tem intervalado: ${cardio.tiros} tiros</p>
+        <p class="intervalado-texto">${forte} s forte, sem conseguir conversar, e ${leve} s leve, ${cardio.tiros} vezes (cerca de ${duracao} min). O resto do tempo é moderado. O app avisa com som e vibração a cada troca.</p>
+        <button class="botao botao--secundario" type="button" data-acao="intervalado-iniciar" data-foco="intervalado-iniciar">Começar intervalado</button>
+      </div>`;
+  }
+  const momento = momentoDoIntervalado(cardio);
+  return html`
+    <div class="intervalado intervalado--rodando" id="intervalado" data-fase="${momento.fase}">
+      <p class="intervalado-fase" id="intervalado-fase">${rotuloDaFase(momento)}</p>
+      <p class="intervalado-relogio" id="intervalado-relogio">${tempo(momento.restante)}</p>
+      <p class="intervalado-tiro" id="intervalado-tiro">${textoDoTiro(momento)}</p>
+      <button class="botao botao--texto" type="button" data-acao="intervalado-parar">Parar intervalado</button>
+    </div>`;
+}
+
+function rotuloDaFase(momento) {
+  return { forte: 'Forte', leve: 'Leve', fim: 'Intervalado concluído' }[momento.fase];
+}
+
+function textoDoTiro(momento) {
+  return momento.fase === 'fim' ? 'Agora complete o tempo em ritmo moderado.' : `Tiro ${momento.tiro} de ${momento.tiros}`;
+}
+
+// Relógio do intervalado: atualiza a tela e avisa com som e vibração a cada troca.
+let relogioDoIntervalado = null;
+let ultimoMomento = null;
+
+function acompanharIntervalado() {
+  clearInterval(relogioDoIntervalado);
+  relogioDoIntervalado = null;
+  const cardio = sessaoAtual(lerEstado())?.cardio;
+  if (!cardio?.timer || cardio.feito || !intervaladoAtivo(cardio)) {
+    ultimoMomento = null;
+    return;
+  }
+  const atualizar = () => {
+    const atual = sessaoAtual(lerEstado())?.cardio;
+    if (!atual?.timer) {
+      clearInterval(relogioDoIntervalado);
+      relogioDoIntervalado = null;
+      return;
+    }
+    const momento = momentoDoIntervalado(atual);
+    const caixa = document.getElementById('intervalado');
+    if (caixa) {
+      caixa.dataset.fase = momento.fase;
+      document.getElementById('intervalado-fase').textContent = rotuloDaFase(momento);
+      document.getElementById('intervalado-relogio').textContent = tempo(momento.restante);
+      document.getElementById('intervalado-tiro').textContent = textoDoTiro(momento);
+    }
+    if (ultimoMomento !== null && momento.chave !== ultimoMomento && lerEstado().configuracoes.alertaFimDaPausa) {
+      agendarBipe(Date.now());
+      vibrar();
+    }
+    ultimoMomento = momento.chave;
+    if (momento.fase === 'fim') {
+      clearInterval(relogioDoIntervalado);
+      relogioDoIntervalado = null;
+    }
+  };
+  atualizar();
+  relogioDoIntervalado = setInterval(atualizar, 250);
 }
 
 // Barra fixa no rodapé: botão de pausa ou o cronômetro rodando.
@@ -318,9 +496,12 @@ export function aoEntrar(ctx) {
 export function aoSair() {
   manterTelaLigada(false);
   pararAcompanhamento();
+  clearInterval(relogioDoIntervalado);
+  relogioDoIntervalado = null;
 }
 
 export function depoisDeRenderizar(extras) {
+  acompanharIntervalado();
   if (!extras.rolar) return;
   const alvo = document.getElementById('serie-atual')
     ?? document.getElementById('cardio-atual')
@@ -416,11 +597,51 @@ export const acoes = {
     ctx.render();
   },
 
-  async 'cardio-ajustar'({ delta }, ctx) {
+  async 'cardio-ajustar'({ campo: nome = 'minutos', delta }, ctx) {
     await ctx.alterar((estado) => {
       const sessao = sessaoAtual(estado);
-      definirCardio(sessao, { minutos: sessao.cardio.minutos + Number(delta) * MINUTOS_DE_CARDIO.passo });
+      if (nome === 'nivel') {
+        const atual = Number.isFinite(sessao.cardio.nivel) ? sessao.cardio.nivel : NIVEL_DE_CARDIO.min - 1;
+        const novo = atual + Number(delta);
+        definirCardio(sessao, { nivel: novo < NIVEL_DE_CARDIO.min ? null : novo });
+      } else {
+        definirCardio(sessao, { minutos: sessao.cardio.minutos + Number(delta) * MINUTOS_DE_CARDIO.passo });
+      }
     });
+    ctx.render();
+  },
+
+  async trocar({ item }, ctx) {
+    const i = Number(item);
+    const trocou = await ctx.alterar((estado) => trocarExercicio(estado, sessaoAtual(estado), i));
+    ctx.render();
+    if (trocou) avisar(`Agora: ${buscarExercicio(sessaoAtual(lerEstado())?.itens[i]?.exercicioId)?.nome ?? 'exercício trocado'}`);
+  },
+
+  async joelho({ item }, ctx) {
+    const ok = await confirmar({
+      titulo: 'Encerrar este exercício hoje?',
+      texto: 'Dor acima de 3 de 10 ou o joelho falhar encerram o exercício no dia. No próximo treino ele volta com uns 15% menos carga.',
+      botao: 'Encerrar exercício',
+    });
+    if (!ok) return;
+    await ctx.alterar((estado) => encerrarPorJoelho(sessaoAtual(estado), Number(item)));
+    ctx.render({ rolar: true });
+  },
+
+  async retomar({ item }, ctx) {
+    await ctx.alterar((estado) => retomarExercicio(sessaoAtual(estado), Number(item)));
+    ctx.render();
+  },
+
+  async 'intervalado-iniciar'(_dados, ctx) {
+    if (ctx.estado.configuracoes.alertaFimDaPausa) prepararAudio(); // ainda dentro do toque
+    await ctx.alterar((estado) => iniciarIntervalado(sessaoAtual(estado)));
+    ctx.render();
+  },
+
+  async 'intervalado-parar'(_dados, ctx) {
+    await ctx.alterar((estado) => pararIntervalado(sessaoAtual(estado)));
     ctx.render();
   },
 
@@ -428,6 +649,7 @@ export const acoes = {
     const feito = await ctx.alterar((estado) => {
       const sessao = sessaoAtual(estado);
       sessao.cardio.feito = !sessao.cardio.feito;
+      if (sessao.cardio.feito) sessao.cardio.timer = null;
       return sessao.cardio.feito;
     });
     ctx.render({ rolar: feito });
@@ -468,9 +690,14 @@ export const acoes = {
 // Carga ou repetições digitadas direto no campo.
 export async function aoMudar(evento, ctx) {
   const campoAlterado = evento.target;
-  if (campoAlterado.name === 'cardio-tipo' || campoAlterado.name === 'cardio-minutos') {
-    const campos = campoAlterado.name === 'cardio-tipo' ? { tipo: campoAlterado.value } : { minutos: Number(campoAlterado.value) };
-    await ctx.alterar((estado) => definirCardio(sessaoAtual(estado), campos));
+  if (['cardio-tipo', 'cardio-minutos', 'cardio-nivel'].includes(campoAlterado.name)) {
+    const valor = campoAlterado.value;
+    const campos = campoAlterado.name === 'cardio-tipo'
+      ? { tipo: valor }
+      : campoAlterado.name === 'cardio-minutos'
+        ? { minutos: Number(valor) }
+        : { nivel: valor === '' ? null : Number(valor) };
+    await ctx.alterar((estado) => definirCardio(sessaoAtual(estado), campos, estado));
     ctx.render();
     return;
   }

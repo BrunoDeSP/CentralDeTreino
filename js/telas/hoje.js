@@ -69,7 +69,7 @@ function acoesDoTreino(estado) {
     return html`
       <div class="treino-acoes" data-anilha="${sessao.treinoId.toLowerCase()}">
         <a class="botao botao--anilha" href="#/sessao">Continuar treino ${sessao.treinoId}</a>
-        <p class="treino-acoes-nota">${feitas} de ${total} séries feitas</p>
+        <p class="treino-acoes-nota">${total ? `${feitas} de ${total} séries feitas` : 'Cardio em andamento'}</p>
       </div>`;
   }
 
@@ -86,7 +86,7 @@ function acoesDoTreino(estado) {
   return html`
     <div class="treino-acoes" data-anilha="${treino.id.toLowerCase()}">
       <button class="botao botao--anilha" type="button" data-acao="iniciar" data-treino="${treino.id}">Começar treino ${treino.id}</button>
-      <p class="treino-acoes-nota">${treino.foco}, ${plural(treino.exercicios.length, 'exercício')}</p>
+      <p class="treino-acoes-nota">${treino.foco}${treino.exercicios.length ? `, ${plural(treino.exercicios.length, 'exercício')}` : `, ${treino.cardio.minutos[0]} a ${treino.cardio.minutos[1]} min`}</p>
       <button class="botao botao--texto" type="button" data-acao="concluir" data-treino="${treino.id}">Já fiz, só marcar como feito</button>
     </div>`;
 }

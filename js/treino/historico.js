@@ -1,5 +1,5 @@
 import { buscarExercicio } from '../dados/exercicios.js';
-import { REGIOES, regiaoDoPadrao, buscarCardio } from '../dados/regioes.js';
+import { REGIOES, regiaoDoExercicio, buscarCardio } from '../dados/regioes.js';
 import { usaCarga } from './progressao.js';
 import { kg, numero } from '../util/texto.js';
 
@@ -33,7 +33,7 @@ export function historicoDeCardio(estado) {
   for (const sessao of sessoesEmOrdem(estado)) {
     if (!sessao.cardio) continue;
     const lista = porTipo.get(sessao.cardio.tipo) ?? [];
-    lista.push({ data: sessao.data, minutos: sessao.cardio.minutos });
+    lista.push({ data: sessao.data, minutos: sessao.cardio.minutos, nivel: sessao.cardio.nivel ?? null });
     porTipo.set(sessao.cardio.tipo, lista);
   }
   return porTipo;
@@ -71,7 +71,7 @@ export function resumoDeForca(exercicioId, registros, progressao = null) {
   const ultimaCarga = evolucao.at(-1)?.valor ?? null;
   return {
     exercicio,
-    regiao: regiaoDoPadrao(exercicio?.padrao),
+    regiao: regiaoDoExercicio(exercicio),
     comCarga,
     medida,
     vezes: registros.length,

@@ -119,7 +119,7 @@ function paginaDeCardio(tipoId, estado) {
           <li class="lista-item lista-item--fixo">
             <span class="lista-texto">
               <span class="lista-titulo">${capitalizar(dataComDiaDaSemana(registro.data))}</span>
-              <span class="lista-sub">${registro.minutos} min</span>
+              <span class="lista-sub">${registro.minutos} min${Number.isFinite(registro.nivel) ? `, nível ${registro.nivel}` : ''}</span>
             </span>
           </li>`)}
       </ul>

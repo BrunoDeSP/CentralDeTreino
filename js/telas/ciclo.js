@@ -1,3 +1,4 @@
+import { buscarFase } from '../dados/modelos.js';
 import { html } from '../ui/html.js';
 import { anilha, semanasDoCiclo } from '../ui/componentes.js';
 import { avisar, confirmar } from '../ui/avisos.js';
@@ -32,7 +33,7 @@ export function render(_params, { estado }) {
 
   return html`
     <h1>Seu ciclo</h1>
-    <p class="ciclo-resumo">${plural(ciclo.diasPorSemana, 'dia')} por semana, durante ${ciclo.semanas} semanas</p>
+    <p class="ciclo-resumo">${ciclo.fase ? `${buscarFase(ciclo.fase).nome}: ` : ''}${plural(ciclo.diasPorSemana, 'dia')} por semana, durante ${plural(ciclo.semanas, 'semana')}</p>
     <p class="contexto">
       De ${dataCurta(ciclo.inicio)} a ${dataCurta(fimPrevisto(ciclo))},
       ${terminou ? 'já concluído' : `semana ${semana.numero} de ${ciclo.semanas}`}
@@ -48,7 +49,7 @@ export function render(_params, { estado }) {
               ${anilha(treino.id, { tamanho: 'p' })}
               <span class="lista-texto">
                 <span class="lista-titulo">${treino.nome}</span>
-                <span class="lista-sub">${treino.foco}, ${plural(treino.exercicios.length, 'exercício')}</span>
+                <span class="lista-sub">${treino.foco}${treino.exercicios.length ? `, ${plural(treino.exercicios.length, 'exercício')}` : ''}</span>
               </span>
               <svg class="lista-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
             </a>

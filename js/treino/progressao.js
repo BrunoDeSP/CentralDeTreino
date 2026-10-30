@@ -1,20 +1,22 @@
 import { kg, numero } from '../util/texto.js';
 
-// Progressão de carga por exercício. Vale para qualquer treino e ciclo,
-// porque fica guardada pelo id do exercício.
+// Progressão de carga por exercício (regra do PDF). Vale para qualquer treino
+// e ciclo, porque fica guardada pelo id do exercício.
 //
-// Regra (dupla progressão):
-// - Cada exercício tem uma meta de repetições (ex.: 10 a 12).
-// - Fez todas as séries no topo da meta, com a mesma carga: no próximo
-//   treino a carga sobe o "incremento" do exercício.
-// - Senão, a carga se mantém e o objetivo é fazer mais repetições.
-// - Três treinos seguidos sem evoluir (nem carga, nem repetições): o app
-//   sugere baixar a carga ou trocar o exercício.
+// - Sobe: fez todas as séries no topo da faixa, com a mesma carga. No treino
+//   seguinte a carga sobe o "incremento" do exercício.
+// - Segura: a maioria das séries ficou abaixo do mínimo da faixa. Em 2 treinos
+//   seguidos a carga se mantém; no 3º, baixa uns 10%.
+// - Joelho: dor acima de 3 de 10 ou falha encerram o exercício no dia, e ele
+//   volta no treino seguinte com uns 15% menos carga.
+// - Semana leve: mesmas cargas, nada sobe nem desce.
 //
 // Exercícios com incremento 0 (peso do corpo, elástico) não têm carga. Ao
 // bater o topo da meta, o app avisa que dá para dificultar.
 
-export const LIMITE_SEM_EVOLUIR = 3;
+export const LIMITE_ABAIXO = 3;
+export const QUEDA_ABAIXO = 0.1;
+export const QUEDA_JOELHO = 0.15;
 
 export function usaCarga(exercicio) {
   return Boolean(exercicio) && exercicio.incremento > 0;
@@ -25,35 +27,46 @@ export function registroDe(estado, exercicioId) {
 }
 
 // Calcula o novo registro do exercício a partir das séries feitas no treino.
-// Devolve null se nenhuma série foi marcada.
-export function avaliarExercicio(item, exercicio, anterior, data) {
+// Devolve null se nada foi feito e o joelho não encerrou o exercício.
+export function avaliarExercicio(item, exercicio, anterior, data, { congelar = false } = {}) {
   const feitas = item.series.filter((serie) => serie.feita && Number.isFinite(serie.reps));
-  if (feitas.length === 0) return null;
-
-  const comCarga = usaCarga(exercicio) && feitas.some((serie) => Number.isFinite(serie.carga));
-  const cargas = feitas.map((serie) => (comCarga ? serie.carga ?? 0 : null));
-  const reps = feitas.map((serie) => serie.reps);
-  const referencia = comCarga ? Math.max(...cargas) : null;
-
-  const completou = feitas.length >= item.series.length;
-  const bateuTopo = completou && reps.every((r) => r >= item.alvo.max) && cargas.every((c) => c === referencia);
-  const decisao = bateuTopo ? (comCarga ? 'subir' : 'dificultar') : 'manter';
-  const carga = comCarga ? (decisao === 'subir' ? arredondar(referencia + exercicio.incremento) : referencia) : null;
-
-  const melhor = {
-    carga: referencia,
-    reps: Math.max(...reps.filter((_, i) => cargas[i] === referencia)),
-    data,
-  };
+  const comCarga = usaCarga(exercicio);
   const recordeAntes = anterior?.recorde ?? null;
 
-  return {
-    carga, // carga sugerida para a próxima vez (null = sem carga)
-    decisao, // 'subir' | 'manter' | 'dificultar'
-    semEvoluir: evoluiu(reps, referencia, anterior?.ultima) ? 0 : (anterior?.semEvoluir ?? 0) + 1,
-    ultima: { data, cargas, reps, alvo: item.alvo },
-    recorde: !recordeAntes || superou(melhor, recordeAntes) ? melhor : recordeAntes,
-  };
+  if (item.joelho) {
+    const base = comCarga ? cargaDeReferencia(feitas, item, anterior) : null;
+    return {
+      carga: Number.isFinite(base) ? reduzir(base, QUEDA_JOELHO, exercicio.incremento) : anterior?.carga ?? null,
+      decisao: 'joelho',
+      abaixoSeguidas: 0,
+      ultima: feitas.length ? ultimaVez(feitas, comCarga, item, data) : anterior?.ultima ?? null,
+      recorde: recordeAntes,
+    };
+  }
+  if (feitas.length === 0) return null;
+
+  const usouCarga = comCarga && feitas.some((serie) => Number.isFinite(serie.carga));
+  const cargas = feitas.map((serie) => (usouCarga ? serie.carga ?? 0 : null));
+  const reps = feitas.map((serie) => serie.reps);
+  const referencia = usouCarga ? Math.max(...cargas) : null;
+  const completou = feitas.length >= item.series.length;
+  const bateuTopo = completou && reps.every((r) => r >= item.alvo.max) && cargas.every((c) => c === referencia);
+  const abaixo = reps.filter((r) => r < item.alvo.min).length > reps.length / 2;
+  const melhor = { carga: referencia, reps: Math.max(...reps.filter((_, i) => cargas[i] === referencia)), data };
+  const recorde = !recordeAntes || superou(melhor, recordeAntes) ? melhor : recordeAntes;
+  const ultima = { data, cargas, reps, alvo: item.alvo };
+
+  if (congelar) {
+    return { carga: anterior?.carga ?? referencia, decisao: 'manter', abaixoSeguidas: anterior?.abaixoSeguidas ?? 0, ultima, recorde };
+  }
+  if (bateuTopo) {
+    return { carga: usouCarga ? arredondar(referencia + exercicio.incremento) : null, decisao: usouCarga ? 'subir' : 'dificultar', abaixoSeguidas: 0, ultima, recorde };
+  }
+  const abaixoSeguidas = abaixo ? (anterior?.abaixoSeguidas ?? 0) + 1 : 0;
+  if (usouCarga && abaixoSeguidas >= LIMITE_ABAIXO) {
+    return { carga: reduzir(referencia, QUEDA_ABAIXO, exercicio.incremento), decisao: 'baixar', abaixoSeguidas: 0, ultima, recorde };
+  }
+  return { carga: referencia, decisao: abaixo ? 'segurar' : 'manter', abaixoSeguidas, ultima, recorde };
 }
 
 // "20 kg × 12, 12, 11"  |  "12, 12, 10 reps"  |  "30, 30, 25 s"
@@ -65,14 +78,23 @@ export function descreverSeries({ cargas, reps, alvo }) {
   return cargas.map((c, i) => `${kg(c ?? 0)} × ${numero(reps[i])}`).join(', ');
 }
 
-// Evoluiu = carga maior que na última vez ou, com a mesma carga, mais repetições no total.
-function evoluiu(reps, referencia, ultima) {
-  if (!ultima) return true;
-  const total = soma(reps);
-  const totalAntes = soma(ultima.reps);
-  if (referencia === null) return total > totalAntes;
-  const cargaAntes = Math.max(0, ...ultima.cargas.map((c) => c ?? 0));
-  return referencia > cargaAntes || (referencia === cargaAntes && total > totalAntes);
+function cargaDeReferencia(feitas, item, anterior) {
+  const usadas = feitas.map((serie) => serie.carga).filter(Number.isFinite);
+  if (usadas.length) return Math.max(...usadas);
+  const planejada = item.series.find((serie) => Number.isFinite(serie.carga))?.carga;
+  return Number.isFinite(planejada) ? planejada : anterior?.carga ?? null;
+}
+
+function ultimaVez(feitas, comCarga, item, data) {
+  return { data, cargas: feitas.map((serie) => (comCarga && Number.isFinite(serie.carga) ? serie.carga : null)), reps: feitas.map((serie) => serie.reps), alvo: item.alvo };
+}
+
+// Tira a porcentagem e arredonda para o degrau do aparelho, sempre para baixo.
+export function reduzir(carga, porcentagem, passo) {
+  const degrau = passo > 0 ? passo : 1;
+  let nova = Math.round((carga * (1 - porcentagem)) / degrau) * degrau;
+  if (nova >= carga) nova = carga - degrau;
+  return Math.max(0, arredondar(nova));
 }
 
 function superou(atual, recorde) {
@@ -80,5 +102,4 @@ function superou(atual, recorde) {
   return atual.carga > recorde.carga || (atual.carga === recorde.carga && atual.reps > recorde.reps);
 }
 
-const soma = (lista) => lista.reduce((total, n) => total + n, 0);
 const arredondar = (valor) => Math.round(valor * 100) / 100;

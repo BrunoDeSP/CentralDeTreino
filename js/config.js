@@ -1,7 +1,7 @@
 // Ajustes gerais do sistema de treino.
 
 export const CONFIG = {
-  diasPorSemana: { min: 1, max: 5, padrao: 3 },
+  diasPorSemana: { min: 1, max: 6, padrao: 3 },
   semanasPorCiclo: { opcoes: [1, 2, 3, 4, 5], padrao: 4 }, // até 5 semanas, mais ou menos um mês
   // Local usado ao montar o ciclo enquanto não definimos onde ela treina.
   localPadrao: 'academia',
@@ -15,6 +15,7 @@ export const CONFIGURACOES_PADRAO = {
   pausaAutomatica: false, // começar a pausa sozinha ao concluir uma série
   alertaFimDaPausa: true, // som e vibração quando a pausa acaba
   telaLigada: true, // manter a tela ligada durante o treino
+  checkupFeito: false, // o intervalado só entra depois do check-up médico
 };
 
 // Equipamentos de cada local. Um exercício só entra no treino se tudo o que

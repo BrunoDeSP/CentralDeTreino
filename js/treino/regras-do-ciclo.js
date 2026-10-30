@@ -1,5 +1,6 @@
 import { montarTreinos } from './gerador.js';
 import { CONFIG } from '../config.js';
+import { FASES, PROXIMA_FASE, buscarFase } from '../dados/modelos.js';
 import { hojeISO, somarDias, diferencaDias } from '../util/datas.js';
 
 // Regras do ciclo de treino.
@@ -21,7 +22,7 @@ export function ciclosEncerrados(estado) {
   return estado.ciclos.filter((ciclo) => ciclo.status === 'encerrado');
 }
 
-export function criarCiclo(estado, { diasPorSemana, semanas, local = CONFIG.localPadrao, inicio = hojeISO() }) {
+export function criarCiclo(estado, { diasPorSemana, semanas, fase = 'construcao', local = CONFIG.localPadrao, inicio = hojeISO() }) {
   // Mudança definitiva de dias = encerra o ciclo atual e começa outro.
   if (cicloAtivo(estado)) encerrarCiclo(estado, inicio);
 
@@ -32,8 +33,9 @@ export function criarCiclo(estado, { diasPorSemana, semanas, local = CONFIG.loca
     fim: null,
     diasPorSemana,
     semanas,
+    fase,
     local,
-    treinos: montarTreinos({ diasPorSemana, local }),
+    treinos: montarTreinos({ diasPorSemana, fase }),
     proximo: 0, // posição do próximo treino na fila
     sessoes: [], // treinos concluídos: { id, treinoId, data, proximoAntes }
   };
@@ -111,3 +113,60 @@ export function resumoDaSemana(ciclo, data = hojeISO()) {
 
   return { semana, feitos: feitas.length, meta, plano, completa: feitas.length >= meta };
 }
+
+// --- Fases e constância --------------------------------------------------------
+
+// Treinos feitos ÷ planejados, contando só as semanas que já passaram.
+export function constancia(ciclo, data = hojeISO()) {
+  const ate = ciclo.fim ?? data;
+  const semanas = Math.min(ciclo.semanas, semanaDoCiclo(ciclo, ate).numero);
+  const planejados = ciclo.diasPorSemana * Math.max(1, semanas);
+  const feitos = Math.min(ciclo.sessoes.length, planejados);
+  return { feitos, planejados, porcentagem: Math.round((feitos / planejados) * 100) };
+}
+
+function ultimoCiclo(estado) {
+  return cicloAtivo(estado) ?? [...estado.ciclos].reverse().find((ciclo) => ciclo.status === 'encerrado') ?? null;
+}
+
+function ultimoTreino(estado) {
+  return estado.ciclos.flatMap((ciclo) => ciclo.sessoes.map((sessao) => sessao.data)).sort().at(-1) ?? null;
+}
+
+// Sugestão da tela de novo ciclo, pela regra do PDF: com 80% ou mais dos
+// treinos feitos, a próxima fase; abaixo disso, repete a fase por 2 semanas.
+// Ela pode escolher outra.
+export function sugerirProximoCiclo(estado, data = hojeISO()) {
+  const anterior = ultimoCiclo(estado);
+  const lembretes = [];
+  const sugestao = (fase, semanas, motivo) => ({ fase, semanas, motivo, lembretes, dias: anterior?.diasPorSemana ?? null });
+
+  if (!anterior?.fase) {
+    return sugestao('adaptacao', buscarFase('adaptacao').semanas, 'Primeiro ciclo do plano: começa pela Adaptação.');
+  }
+  const ultimo = ultimoTreino(estado);
+  if (ultimo && diferencaDias(ultimo, data) > 14) {
+    return sugestao('adaptacao', 2, 'Mais de 2 semanas sem treinar: 2 semanas de Adaptação para voltar aos poucos.');
+  }
+  const ate = anterior.status === 'ativo' ? data : anterior.fim;
+  const completo = semanaDoCiclo(anterior, ate).numero > anterior.semanas;
+  if (!completo) {
+    const faltam = Math.max(1, anterior.semanas - semanaDoCiclo(anterior, ate).numero + 1);
+    return sugestao(anterior.fase, Math.min(faltam, buscarFase(anterior.fase).semanas), `O ciclo atual ainda não terminou: continua na ${buscarFase(anterior.fase).nome}.`);
+  }
+  const { feitos, planejados, porcentagem } = constancia(anterior, ate);
+  const placar = `${feitos} de ${planejados} treinos (${porcentagem}%) no ciclo anterior`;
+  if (porcentagem < 80) {
+    return sugestao(anterior.fase, 2, `${placar}: o plano repete a ${buscarFase(anterior.fase).nome} por mais 2 semanas.`);
+  }
+  const fase = PROXIMA_FASE[anterior.fase];
+  if (fase === 'construcao' && anterior.fase === 'adaptacao') lembretes.push('Hora do check-up médico, se ainda não fez: ele libera o intervalado.');
+  if (fase === 'consolidacao') {
+    lembretes.push('Hora da bioimpedância da semana 8.');
+    if (anterior.diasPorSemana < 4) lembretes.push('O plano sugere passar para 4 dias por semana.');
+  }
+  if (anterior.fase === 'leve') lembretes.push('Hora da bioimpedância antes da nova rodada.');
+  return sugestao(fase, buscarFase(fase).semanas, `${placar}: pode avançar para a ${buscarFase(fase).nome}.`);
+}
+
+export { FASES };

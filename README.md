@@ -18,8 +18,9 @@ o rastreador de hábitos.
   escolhe em cada um). O check no canto marca o dia de hoje, e tocar num dia
   do calendário marca um dia anterior. Os treinos entram sozinhos como um
   hábito, com meta própria, separada da programação do ciclo.
-- **Ciclo e divisão:** de 1 a 5 dias por semana, por 1 a 5 semanas. Os
-  exercícios ficam fixos durante o ciclo e os treinos andam em fila.
+- **Ciclo e divisão:** ela escolhe a fase do plano, de 1 a 6 dias por semana
+  e de 1 a 5 semanas. Os exercícios ficam fixos durante o ciclo e os treinos
+  andam em fila.
 - **Treino em andamento:** uma série por vez, com carga e repetições já
   preenchidas (ajustáveis no + e − ou digitando) e o botão "Concluir série".
   Tudo é salvo a cada toque: fechar o app no meio não perde nada.
@@ -54,14 +55,52 @@ o rastreador de hábitos.
 - Quando a meta é batida, aparece o selo "Meta batida" e um aviso na hora.
 - As semanas começam na segunda-feira.
 
-## Progressão de carga (dupla progressão)
+## O plano dentro do app
+
+O plano do PDF "Treino para emagrecimento" está em `js/dados/`:
+
+- **Exercícios** (`exercicios.js`): os 23 do plano, cada um com a dica de
+  execução e uma alternativa para quando o aparelho estiver ocupado. O
+  `status` decide o que entra: `liberado` vai para os treinos, `alternativa`
+  só aparece pela troca, `testar` e `fora` não entram. Os exercícios do banco
+  de exemplo ficaram como `fora`, para o histórico não sumir.
+- **Treinos por dias** (`modelos.js`): 1 a 3 dias = corpo inteiro (A, B, C);
+  4 dias = Inferior A, Superior A, Inferior B e Superior B (anilhas A a D);
+  5 dias = os 4 + Cardio + core (E) no meio; 6 dias = os 5 + Cardio longo (F).
+  Com 4 dias, os isolados têm 2 séries; com 5 ou 6, a última linha de cada
+  treino sai e o core vai para o dia E.
+- **Tempo por treino:** cerca de 1h30 com 1 ou 2 dias, 1h20 com 3, 1h10 com 4
+  e 1h com 5 ou 6. O aquecimento é de 10 min até 3 dias e de 5 min depois.
+- **Fases** (escolhidas ao montar o ciclo): Adaptação (2 séries, 3 repetições
+  sobrando), Construção (séries do plano), Consolidação (+1 série nos dois
+  primeiros compostos de cada treino, até 4) e Semana leve (metade das séries,
+  mesmas cargas). O app sugere a fase pela regra do PDF: com 80% ou mais dos
+  treinos feitos no ciclo anterior, a próxima; abaixo disso, repetir por 2
+  semanas; mais de 2 semanas parada, 2 semanas de Adaptação. Depois da semana
+  leve, a sugestão volta para a Construção.
+- **Cardio** (`regioes.js`): bike, bike horizontal e elíptico no fim do treino;
+  hidroginástica ou natação também no Cardio longo; remo em `testar`. Cada
+  aparelho tem o passo a passo (ajuste, como fazer, ritmo, intervalado e
+  joelho). Os minutos começam no mínimo da faixa dos dias e sobem 5 min por
+  semana quando ela completa. O nível do aparelho é opcional.
+- **Intervalado:** uma vez por semana no último treino da sequência (B com 2
+  dias, C com 3, D com 4 a 6) e, na Consolidação, também no dia E. Só entra
+  depois que ela marca o check-up em Configurações. Tiros de 30 s forte e 90 s
+  leve, começando com 6 e subindo 1 a cada intervalado, até 10, com
+  cronômetro que bipa e vibra a cada troca.
+
+## Progressão de carga
 
 - Cada exercício tem uma meta de repetições (ex.: 10 a 12).
-- Fez **todas** as séries no topo da meta com a mesma carga: no próximo treino
-  a carga sobe o `incremento` do exercício (definido em `exercicios.js`).
-- Senão, a carga se mantém e o objetivo é fazer mais repetições.
-- Três treinos seguidos sem evoluir: o app sugere baixar a carga ou trocar o
-  exercício.
+- **Sobe:** fez **todas** as séries no topo da meta com a mesma carga; no
+  próximo treino a carga sobe o `incremento` do exercício.
+- **Segura:** a maioria das séries ficou abaixo do mínimo. Em 2 treinos
+  seguidos a carga se mantém; no 3º, baixa uns 10%.
+- **Joelho incomodou** (exercícios de perna): encerra o exercício no dia, e ele
+  volta no treino seguinte com uns 15% menos carga.
+- **Alternativa:** tem carga própria; voltar ao exercício principal retoma a
+  carga dele.
+- **Semana leve:** nenhuma carga muda.
 - Exercícios sem carga (peso do corpo, elástico): ao bater o topo da meta, o
   app avisa que dá para dificultar.
 - As repetições de cada série começam com o que ela fez da última vez com a
@@ -87,8 +126,8 @@ central-de-treino/
     │   ├── index.js            ponto de troca: local hoje, planilha depois
     │   └── local.js            salva no navegador do celular
     ├── dados/
-    │   ├── exercicios.js       banco de exercícios (exemplo)
-    │   ├── modelos.js          divisões de 1 a 5 dias
+    │   ├── exercicios.js       exercícios do plano e alternativas
+    │   ├── modelos.js          fases e treinos de 1 a 6 dias
     │   └── regioes.js          regiões do corpo e tipos de cardio
     ├── habitos/
     │   └── regras-dos-habitos.js  metas, contagens e resumo do mês
@@ -156,8 +195,9 @@ e abra `http://localhost:8000`.
 
 | Quero mudar...                                       | Arquivo                    |
 | ---------------------------------------------------- | -------------------------- |
-| Exercícios (nome, equipamento, incremento da carga)  | `js/dados/exercicios.js`   |
-| Divisões, séries, repetições e cardio                | `js/dados/modelos.js`      |
+| Exercícios, alternativas, dicas e status             | `js/dados/exercicios.js`   |
+| Treinos por dias, fases, séries e minutos de cardio  | `js/dados/modelos.js`      |
+| Aparelhos de cardio, passo a passo e intervalado     | `js/dados/regioes.js`      |
 | Regras da progressão                                 | `js/treino/progressao.js`  |
 | Cores e sugestões de hábitos                         | `js/habitos/regras-dos-habitos.js` |
 | Valores iniciais e limites das configurações         | `js/config.js`             |
@@ -187,6 +227,7 @@ Quando o Google Planilhas entrar, cada parte vira uma aba: **Exercícios**,
    `armazenamento/local.js`.
 2. Pergunta de local de treino (academia ou casa) na tela de novo ciclo.
 3. Avaliações (bioimpedância) e dieta.
+4. Registrar um cardio extra num dia livre (o PDF sugere com 3 ou 4 dias).
 
 ---
 

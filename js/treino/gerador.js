@@ -1,84 +1,73 @@
-import { EXERCICIOS } from '../dados/exercicios.js';
-import { MODELOS, PADRAO_DO_TREINO, SEGUNDOS_PADRAO } from '../dados/modelos.js';
-import { LOCAIS } from '../config.js';
+import { buscarExercicio } from '../dados/exercicios.js';
+import { OPCOES, DIAS_DE_CARDIO, DESCANSO, linhasDoTreino, focoDoTreino } from '../dados/modelos.js';
 
-// Monta os treinos de um ciclo a partir da quantidade de dias por semana.
+// Monta os treinos de um ciclo a partir dos dias por semana e da fase.
 //
-// Cada padrão de movimento usa os exercícios do banco em rodízio ao longo do
-// ciclo: a primeira vaga de "agachar" pega o 1º agachamento disponível, a
-// segunda pega o 2º, e assim por diante. Assim o Treino A e o Treino C não
-// repetem os mesmos exercícios.
-export function montarTreinos({ diasPorSemana, local }) {
-  const modelo = MODELOS[diasPorSemana];
-  if (!modelo) throw new Error(`Não existe modelo para ${diasPorSemana} dia(s) por semana.`);
+// As tabelas de modelos.js trazem as séries da Construção. Aqui elas viram as
+// da fase: Adaptação = 2 séries em tudo; Consolidação = +1 nos dois primeiros
+// compostos (até 4); semana leve = metade das séries da Consolidação.
 
-  const disponiveis = LOCAIS[local]?.equipamentos ?? [];
-  const rodizio = new Map(); // padrão -> próxima posição a usar
-
-  return modelo.treinos.map((base) => {
-    const usadosNoTreino = new Set();
-
-    const exercicios = base.vagas.map((vaga) => {
-      const exercicio = escolherExercicio(vaga.padrao, disponiveis, rodizio, usadosNoTreino);
-      if (exercicio) usadosNoTreino.add(exercicio.id);
-      return prescrever(vaga, exercicio);
-    });
-
-    return {
-      id: base.id,
-      nome: `Treino ${base.id}`,
-      foco: base.foco,
-      formato: base.formato ?? PADRAO_DO_TREINO.formato,
-      voltas: base.voltas ?? PADRAO_DO_TREINO.voltas,
-      descanso: base.descanso ?? PADRAO_DO_TREINO.descanso,
-      cardio: base.cardio ?? PADRAO_DO_TREINO.cardio,
-      exercicios,
-    };
-  });
+export function montarTreinos({ diasPorSemana, fase = 'construcao' }) {
+  const opcao = OPCOES[diasPorSemana];
+  if (!opcao) throw new Error(`Não existe plano para ${diasPorSemana} dia(s) por semana.`);
+  return opcao.sequencia.map((id) => montarTreino(id, diasPorSemana, opcao, fase));
 }
 
-// Prévia usada na tela de novo ciclo (sem escolher exercícios).
-export function resumoDoModelo(diasPorSemana) {
-  const modelo = MODELOS[diasPorSemana];
-  if (!modelo) return null;
+function montarTreino(id, dias, opcao, fase) {
+  const diaDeCardio = DIAS_DE_CARDIO[id];
+  const linhas = linhasDoTreino(opcao.divisao, id).filter((linha) => !(linha.so4 && dias >= 5));
+  let compostos = 0;
+  const exercicios = linhas.map((linha) => {
+    const exercicio = buscarExercicio(linha.id);
+    const ehComposto = exercicio?.tipo === 'composto';
+    const entreOsDois = ehComposto && compostos < 2;
+    if (ehComposto) compostos += 1;
+    return {
+      exercicioId: linha.id,
+      series: seriesDaFase(linha.series, fase, entreOsDois),
+      alvo: { min: linha.min, max: linha.max, medida: exercicio?.medida === 'segundos' ? 'segundos' : 'reps' },
+    };
+  });
+
+  const intervalado = fase !== 'leve' && (id === opcao.intervalado || (id === 'E' && fase === 'consolidacao'));
   return {
-    nome: modelo.nome,
-    descricao: modelo.descricao,
-    treinos: modelo.treinos.map(({ id, foco }) => ({ id, foco })),
+    id,
+    nome: `Treino ${id}`,
+    foco: focoDoTreino(opcao.divisao, id),
+    tipo: diaDeCardio && exercicios.length === 0 ? 'cardio' : 'musculacao',
+    formato: 'series',
+    voltas: null,
+    descanso: DESCANSO,
+    aquecimento: diaDeCardio ? null : dias <= 3 ? 10 : 5,
+    cardio: {
+      chave: diaDeCardio?.chave ?? 'fim',
+      minutos: diaDeCardio?.minutos ?? opcao.cardio,
+      ritmo: 'moderado',
+      intervalado,
+      primeiro: Boolean(diaDeCardio?.primeiro),
+      como: diaDeCardio?.como ?? null,
+    },
+    exercicios,
   };
 }
 
-function candidatos(padrao, disponiveis) {
-  return EXERCICIOS.filter(
-    (exercicio) => exercicio.padrao === padrao && exercicio.requer.every((item) => disponiveis.includes(item)),
-  );
+function seriesDaFase(base, fase, entreOsDoisCompostos) {
+  if (fase === 'adaptacao') return 2;
+  const consolidacao = entreOsDoisCompostos ? Math.min(4, base + 1) : base;
+  if (fase === 'consolidacao') return consolidacao;
+  if (fase === 'leve') return Math.max(1, Math.ceil(consolidacao / 2));
+  return base;
 }
 
-function escolherExercicio(padrao, disponiveis, rodizio, usadosNoTreino) {
-  const lista = candidatos(padrao, disponiveis);
-  if (lista.length === 0) return null;
-
-  const inicio = rodizio.get(padrao) ?? 0;
-  // Pula exercícios que já estão neste mesmo treino (ex.: duas vagas de "quadril").
-  for (let passo = 0; passo < lista.length; passo++) {
-    const opcao = lista[(inicio + passo) % lista.length];
-    if (!usadosNoTreino.has(opcao.id)) {
-      rodizio.set(padrao, inicio + passo + 1);
-      return opcao;
-    }
-  }
-  // Banco pequeno demais para não repetir: repete o exercício da vez.
-  rodizio.set(padrao, inicio + 1);
-  return lista[inicio % lista.length];
-}
-
-function prescrever(vaga, exercicio) {
-  const emSegundos = exercicio?.medida === 'segundos';
-  const [min, max] = emSegundos ? (vaga.segundos ?? SEGUNDOS_PADRAO) : vaga.reps;
+// Prévia usada na tela de novo ciclo.
+export function resumoDoModelo(diasPorSemana) {
+  const opcao = OPCOES[diasPorSemana];
+  if (!opcao) return null;
   return {
-    exercicioId: exercicio?.id ?? null, // null = nenhum exercício do banco serve para este local
-    padrao: vaga.padrao,
-    series: vaga.series,
-    alvo: { min, max, medida: emSegundos ? 'segundos' : 'reps' },
+    nome: opcao.nome,
+    descricao: opcao.descricao,
+    tempo: opcao.tempo,
+    cardio: opcao.cardio,
+    treinos: opcao.sequencia.map((id) => ({ id, foco: focoDoTreino(opcao.divisao, id) })),
   };
 }
